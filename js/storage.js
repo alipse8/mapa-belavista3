@@ -1,15 +1,15 @@
 /**
  * storage.js - Camada de Persistência e Sincronização em Tempo Real
  * Suporta:
- * 1. Firebase Realtime Database (Sincronização instantânea na nuvem para todos os vizinhos)
+ * 1. Firebase Realtime Database (Configurado para belavista3-vizinhos)
  * 2. Google Sheets Webhook (Opcional via Google Apps Script)
- * 3. LocalStorage (Modo offline / Demonstração com persistência local)
+ * 3. LocalStorage (Fallback e cache local)
  */
 
 class LotStorage {
   constructor() {
     this.storageKey = 'pacaembu_vizinhos_v1';
-    this.configKey = 'pacaembu_config_v1';
+    this.configKey = 'pacaembu_config_v2';
     this.subscribers = [];
     this.cache = {};
     this.firebaseApp = null;
@@ -18,23 +18,31 @@ class LotStorage {
   }
 
   loadConfig() {
+    const defaultConfig = {
+      mode: 'firebase', // Padrão: Firebase Realtime Database ativo
+      firebase: {
+        databaseURL: 'https://belavista3-vizinhos-default-rtdb.firebaseio.com/',
+        apiKey: '',
+        projectId: 'belavista3-vizinhos'
+      },
+      sheetsUrl: ''
+    };
+
     try {
       const saved = localStorage.getItem(this.configKey);
       if (saved) {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        // Garante que o databaseURL seja o do usuário se estiver vazio
+        if (!parsed.firebase || !parsed.firebase.databaseURL) {
+          parsed.firebase = defaultConfig.firebase;
+          parsed.mode = 'firebase';
+        }
+        return { ...defaultConfig, ...parsed };
       }
     } catch (e) {
       console.warn('Erro ao carregar configurações de storage:', e);
     }
-    return {
-      mode: 'local', // 'local' | 'firebase' | 'sheets'
-      firebase: {
-        databaseURL: '',
-        apiKey: '',
-        projectId: ''
-      },
-      sheetsUrl: ''
-    };
+    return defaultConfig;
   }
 
   saveConfig(newConfig) {
@@ -67,13 +75,11 @@ class LotStorage {
       if (data) {
         this.cache = JSON.parse(data);
       } else {
-        // Se nunca foi aberto, carrega os exemplos iniciais
-        this.cache = { ...INITIAL_DEMO_NEIGHBORS };
-        this.saveToLocal();
+        this.cache = {};
       }
     } catch (e) {
       console.error('Erro ao ler LocalStorage:', e);
-      this.cache = { ...INITIAL_DEMO_NEIGHBORS };
+      this.cache = {};
     }
   }
 
@@ -90,13 +96,14 @@ class LotStorage {
     try {
       if (typeof firebase === 'undefined') {
         console.warn('Biblioteca Firebase não carregada. Operando em modo local.');
+        this.notifySubscribers();
         return;
       }
 
       const fbConfig = {
         databaseURL: this.config.firebase.databaseURL,
-        apiKey: this.config.firebase.apiKey || 'dummy-key',
-        projectId: this.config.firebase.projectId || 'pacaembu-mapa'
+        apiKey: this.config.firebase.apiKey || 'AIzaSyDemoKeyForPublicDatabase123',
+        projectId: this.config.firebase.projectId || 'belavista3-vizinhos'
       };
 
       if (!firebase.apps.length) {
@@ -119,12 +126,15 @@ class LotStorage {
         this.saveToLocal(); // mantém cópia local
         this.notifySubscribers();
       }, (error) => {
-        console.error('Erro ao sincronizar Firebase:', error);
+        console.warn('Aviso do Firebase (verifique as Regras de Leitura/Gravação no Console):', error);
+        // Fallback para cache local se houver restrição
+        this.notifySubscribers();
       });
 
-      console.log('Firebase Realtime Database conectado com sucesso!');
+      console.log('Firebase conectado a:', this.config.firebase.databaseURL);
     } catch (e) {
       console.error('Falha ao inicializar Firebase:', e);
+      this.notifySubscribers();
     }
   }
 
@@ -160,7 +170,7 @@ class LotStorage {
       registeredAt: data.registeredAt || new Date().toISOString()
     };
 
-    // Atualiza cache local
+    // Atualiza cache local imediatamente para resposta rápida na UI
     this.cache[lotId] = record;
     this.saveToLocal();
     this.notifySubscribers();
@@ -224,7 +234,6 @@ class LotStorage {
 
   subscribe(callback) {
     this.subscribers.push(callback);
-    // Dispara imediatamente com o cache atual
     callback(this.cache);
   }
 
