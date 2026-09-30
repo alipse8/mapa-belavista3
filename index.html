@@ -21,7 +21,7 @@
   <!-- Estilos customizados -->
   <link rel="stylesheet" href="css/style.css">
 
-  <!-- Firebase SDK (compat para rodar direto no GitHub Pages sem bundler) -->
+  <!-- Firebase SDK (compat) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
@@ -62,27 +62,61 @@
         ⚙️
       </button>
       <button class="btn-primary" onclick="window.app.openRegisterModal()">
-        <span>+</span> Cadastrar Meu Lote
+        <span>+</span> Cadastrar Lote
       </button>
     </div>
   </header>
 
   <!-- =========================================================================
-       NAVEGADOR DE BLOCOS (CHIPS ROLÁVEIS)
+       NAVEGADOR DE BLOCOS (CARROSSEL COM SETAS < >)
        ========================================================================= -->
   <nav class="block-navigator-bar">
+    <button class="carousel-arrow prev" id="btnBlockPrev" title="Rolar para esquerda" onclick="window.app.scrollBlocks(-1)">‹</button>
     <div class="chips-scroll-container" id="blockChipsContainer">
       <!-- Chips gerados via JavaScript: Todos, Bloco A, B, C... U -->
     </div>
+    <button class="carousel-arrow next" id="btnBlockNext" title="Rolar para direita" onclick="window.app.scrollBlocks(1)">›</button>
   </nav>
+
+  <!-- =========================================================================
+       BANNER DE FOCO NO BLOCO (QUANDO O RESTO DO MAPA SOME)
+       ========================================================================= -->
+  <div id="blockFocusBanner" class="block-focus-banner" style="display: none;">
+    <div class="block-focus-info">
+      <span class="focus-pin-icon">📍</span>
+      <div>
+        <strong id="focusBlockTitle">Bloco A</strong>
+        <span class="focus-subtitle" id="focusBlockSubtitle">50 lotes</span>
+      </div>
+    </div>
+    <button class="btn-back-map" onclick="window.app.clearBlockFocus()">
+      ← Ver Mapa Geral
+    </button>
+  </div>
 
   <!-- =========================================================================
        CANVAS DO MAPA INTERATIVO (LEAFLET)
        ========================================================================= -->
   <div id="map"></div>
 
-  <!-- Legenda e Status no canto inferior esquerdo -->
-  <div class="map-control-custom">
+  <!-- =========================================================================
+       BANDEJA INFERIOR DE LOTES DO BLOCO FOCADO
+       ========================================================================= -->
+  <div id="blockLotsTray" class="block-lots-tray" style="display: none;">
+    <div class="tray-header">
+      <span class="tray-title" id="trayTitle">Lotes do Bloco:</span>
+      <div class="tray-legend">
+        <span class="legend-chip occ"><span class="dot"></span> Ocupado</span>
+        <span class="legend-chip avail"><span class="dot"></span> Disponível</span>
+      </div>
+    </div>
+    <div class="lots-chips-container" id="lotsChipsContainer">
+      <!-- Botões de cada lote gerados dinamicamente -->
+    </div>
+  </div>
+
+  <!-- Legenda e Status no canto inferior esquerdo (Mapa Geral) -->
+  <div class="map-control-custom" id="mapGeneralControl">
     <div style="display: flex; align-items: center; gap: 6px;">
       <span class="map-legend-dot occupied"></span>
       <span><strong class="stat-occupied-count">0</strong> Vizinhos</span>
@@ -98,18 +132,18 @@
 
   <!-- Botão Flutuante Principal (Mobile) -->
   <div class="fab-container">
-    <button class="fab-main" onclick="window.app.openRegisterModal()">
+    <button class="fab-main" onclick="window.app.openRegisterModal()" title="Cadastrar Meu Lote">
       <span>+</span> Meu Lote
     </button>
   </div>
 
   <!-- =========================================================================
-       MODAL 1: CADASTRAR MEU LOTE
+       MODAL 1: CADASTRAR / EDITAR MEU LOTE (COM BOTÃO SALVAR FIXO E VISÍVEL)
        ========================================================================= -->
   <div class="modal-overlay" id="registerModal">
     <div class="modal-card">
       <div class="modal-header">
-        <h3><span>📝</span> Cadastrar Meu Terreno</h3>
+        <h3 id="regModalTitle"><span>📝</span> Cadastrar Meu Terreno</h3>
         <button class="modal-close" onclick="window.app.closeRegisterModal()">✕</button>
       </div>
       <form id="registerForm">
@@ -133,35 +167,24 @@
           <div class="form-group">
             <label for="regPhone">WhatsApp / Celular com DDD *</label>
             <input type="tel" id="regPhone" class="form-control" placeholder="(11) 98765-4321" required>
-            <div class="form-help">Usado para criar o botão direto de conversa no WhatsApp.</div>
-          </div>
-
-          <div class="form-group">
-            <label for="regStatus">Situação do Terreno</label>
-            <select id="regStatus" class="form-control">
-              <option value="Em obras">Em obras 🏗️</option>
-              <option value="Projeto aprovado">Em fase de projeto 📐</option>
-              <option value="Terreno quitado">Terreno quitado 🔑</option>
-              <option value="Já morando">Já morando 🏡</option>
-              <option value="Investimento">Investimento / Futura construção 📈</option>
-            </select>
+            <div class="form-help">Usado para os vizinhos conversarem com você no WhatsApp.</div>
           </div>
 
           <div class="form-group">
             <label for="regMessage">Recado para os Vizinhos (Opcional)</label>
-            <textarea id="regMessage" class="form-control" placeholder="Ex: Olá vizinhos! Vamos começar a construir no mês que vem, qualquer coisa nos chame no WhatsApp!"></textarea>
+            <textarea id="regMessage" class="form-control" placeholder="Ex: Olá vizinhos! Vamos começar a construir logo, qualquer coisa podem chamar no WhatsApp!"></textarea>
           </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn-secondary" onclick="window.app.closeRegisterModal()">Cancelar</button>
-          <button type="submit" class="btn-primary" id="btnSubmitRegister">Salvar e Compartilhar</button>
+          <button type="submit" class="btn-primary" id="btnSubmitRegister">💾 Salvar e Compartilhar</button>
         </div>
       </form>
     </div>
   </div>
 
   <!-- =========================================================================
-       MODAL 2: PERFIL DO VIZINHO (AO CLICAR NO LOTE)
+       MODAL 2: PERFIL DO VIZINHO (COM BOTÃO DE EDITAR E WHATSAPP)
        ========================================================================= -->
   <div class="modal-overlay" id="neighborModal">
     <div class="modal-card">
@@ -174,23 +197,23 @@
           <div class="neighbor-avatar-lg" id="neighborAvatar">V</div>
           <h4 id="neighborName">Nome do Vizinho</h4>
           <div class="neighbor-location-pill" id="neighborLocation">Bloco A • Lote 01</div>
-          <div>
-            <span class="neighbor-status-badge" id="neighborStatus">Em obras</span>
-          </div>
         </div>
 
         <div id="neighborMessageBox" class="neighbor-message-box">
           "Recado do vizinho aqui..."
         </div>
 
-        <div style="margin-top: 20px;">
+        <div style="margin-top: 16px;">
           <a id="neighborWhatsappBtn" href="#" target="_blank" class="btn-whatsapp">
             <span>💬</span> Conversar no WhatsApp
           </a>
         </div>
       </div>
       <div class="modal-footer" style="justify-content: space-between;">
-        <button type="button" class="btn-danger" id="btnDeleteLot">Desocupar Lote</button>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn-primary" id="btnEditLot">✏️ Editar</button>
+          <button type="button" class="btn-danger" id="btnDeleteLot">Desocupar</button>
+        </div>
         <button type="button" class="btn-secondary" onclick="window.app.closeNeighborModal()">Fechar</button>
       </div>
     </div>
@@ -272,42 +295,30 @@
       </div>
       <div class="modal-body">
         <div class="config-section">
-          <h4>Sincronização entre Celulares</h4>
-          <p>Para que os vizinhos vejam os cadastros uns dos outros no GitHub Pages, selecione o modo de nuvem:</p>
+          <h4>Sincronização Firebase Realtime Database</h4>
+          <p>Conectado ao seu projeto Firebase: <code>belavista3-vizinhos</code></p>
           <div class="form-group">
             <label for="configStorageMode">Modo de Armazenamento</label>
             <select id="configStorageMode" class="form-control">
-              <option value="local">Modo Local (Demonstração / Teste no navegador)</option>
-              <option value="firebase">Firebase Realtime Database (Nuvem em tempo real - Recomendado)</option>
-              <option value="sheets">Google Sheets (Planilha Google Webhook)</option>
+              <option value="firebase">Firebase Realtime Database (Nuvem em tempo real - Ativo)</option>
+              <option value="local">Modo Local (Offline)</option>
             </select>
           </div>
 
-          <!-- Campos Firebase -->
-          <div id="firebaseConfigFields" style="display: none; background: var(--gray-50); padding: 12px; border-radius: var(--radius-md); margin-top: 10px;">
+          <div id="firebaseConfigFields" style="background: var(--gray-50); padding: 12px; border-radius: var(--radius-md); margin-top: 10px;">
             <div class="form-group">
               <label for="configFbUrl">URL do Firebase Realtime Database</label>
-              <input type="text" id="configFbUrl" class="form-control" placeholder="https://seu-projeto-default-rtdb.firebaseio.com">
-              <div class="form-help">Gratuito no console.firebase.google.com (100% gratuito sem cartão).</div>
-            </div>
-          </div>
-
-          <!-- Campos Google Sheets -->
-          <div id="sheetsConfigFields" style="display: none; background: var(--gray-50); padding: 12px; border-radius: var(--radius-md); margin-top: 10px;">
-            <div class="form-group">
-              <label for="configSheetsUrl">URL do Google Apps Script Web App</label>
-              <input type="text" id="configSheetsUrl" class="form-control" placeholder="https://script.google.com/macros/s/.../exec">
-              <div class="form-help">Consulte o arquivo <code>google-apps-script.js</code> para instruções.</div>
+              <input type="text" id="configFbUrl" class="form-control" placeholder="https://belavista3-vizinhos-default-rtdb.firebaseio.com/">
             </div>
           </div>
         </div>
 
         <div class="config-section">
           <h4>Exportar e Backup</h4>
-          <p>Baixe a lista de contatos dos vizinhos a qualquer momento:</p>
+          <p>Baixe a lista de contatos dos vizinhos em Excel ou JSON:</p>
           <div style="display: flex; gap: 8px;">
-            <button class="btn-secondary" onclick="window.storage.downloadCSV()">📊 Baixar Excel / CSV</button>
-            <button class="btn-secondary" onclick="window.storage.downloadJSON()">💾 Baixar Backup JSON</button>
+            <button type="button" class="btn-secondary" onclick="window.storage.downloadCSV()">📊 Baixar Excel / CSV</button>
+            <button type="button" class="btn-secondary" onclick="window.storage.downloadJSON()">💾 Baixar Backup JSON</button>
           </div>
         </div>
       </div>

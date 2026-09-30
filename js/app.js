@@ -11,7 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
     markers: {}, // lotId -> L.marker
     neighbors: {}, // dados do storage
     selectedLot: null,
-    activeOverlay: null,
+    activeBlockMask: null,
+    isEditing: false,
+    editingLotId: null,
   };
 
   // =========================================================================
@@ -46,13 +48,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Ajusta visão inicial para ver todo o loteamento
     state.map.fitBounds(bounds, { padding: [10, 10] });
 
-    // Click no mapa
-    state.map.on('click', (e) => {
-      // Fecha dropdowns abertos
+    // Click no mapa fecha buscas
+    state.map.on('click', () => {
       closeSearchDropdown();
     });
 
-    // Ao mudar o zoom, ajusta visibilidade de lotes vazios
+    // Ao mudar o zoom, atualiza visibilidade
     state.map.on('zoomend', () => {
       updateMarkersVisibility();
     });
@@ -72,7 +73,6 @@ document.addEventListener('DOMContentLoaded', () => {
     state.markers = {};
 
     const neighbors = state.neighbors;
-    const currentZoom = state.map ? state.map.getZoom() : -1;
 
     LOTS_DATA.forEach(lot => {
       const latlng = pixelToLatLng(lot.x, lot.y);
@@ -98,8 +98,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Tooltip informativo
       const tooltipText = isOccupied
-        ? `<strong>Quadra ${lot.block} • Lote ${lot.lot}</strong><br>👤 ${neighbor.name}<br>💬 Clique para ver`
-        : `<strong>Quadra ${lot.block} • Lote ${lot.lot}</strong><br>Disponível • Clique para cadastrar`;
+        ? `<strong>Quadra / Bloco ${lot.block} • Lote ${lot.lot}</strong><br>👤 ${neighbor.name}<br>💬 Clique para ver dados`
+        : `<strong>Quadra / Bloco ${lot.block} • Lote ${lot.lot}</strong><br>Disponível • Clique para cadastrar`;
 
       marker.bindTooltip(tooltipText, {
         className: 'custom-tooltip',
@@ -115,8 +115,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
       state.markers[lot.id] = marker;
 
-      // Adiciona ao mapa se estiver ocupado OU se o zoom for alto o suficiente
-      const shouldShow = isOccupied || currentZoom >= -0.5 || (state.currentBlock && state.currentBlock === lot.block);
+      // REGRA DE VISIBILIDADE:
+      // Se um bloco estiver focado, mostra todos os lotes desse bloco.
+      // Se estiver no mapa geral, mostra APENAS os lotes ocupados para manter o mapa limpo e bonito!
+      const isBlockFocused = state.currentBlock && state.currentBlock === lot.block;
+      const shouldShow = isOccupied || isBlockFocused;
       if (shouldShow) {
         marker.addTo(state.map);
       }
@@ -127,7 +130,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateMarkersVisibility() {
     if (!state.map) return;
-    const currentZoom = state.map.getZoom();
 
     LOTS_DATA.forEach(lot => {
       const marker = state.markers[lot.id];
@@ -135,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const isOccupied = !!state.neighbors[lot.id];
       const isBlockFocused = state.currentBlock && state.currentBlock === lot.block;
-      const shouldShow = isOccupied || currentZoom >= -0.5 || isBlockFocused;
+      const shouldShow = isOccupied || isBlockFocused;
 
       const isCurrentlyOnMap = state.map.hasLayer(marker);
       if (shouldShow && !isCurrentlyOnMap) {
@@ -147,11 +149,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // =========================================================================
-  // 3. NAVEGADOR DE BLOCOS (CHIPS HORIZONTAIS)
+  // 3. NAVEGADOR DE BLOCOS (CHIPS HORIZONTAIS COM CARROSSEL)
   // =========================================================================
   function initBlockNavigator() {
     const container = document.getElementById('blockChipsContainer');
     if (!container) return;
+
+    container.innerHTML = '';
 
     // Botão "Todos"
     const allBtn = document.createElement('button');
@@ -169,25 +173,54 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  function scrollBlocks(direction) {
+    const container = document.getElementById('blockChipsContainer');
+    if (!container) return;
+    container.scrollBy({ left: 240 * direction, behavior: 'smooth' });
+  }
+
   function focusBlock(blockName, chipElement) {
     state.currentBlock = blockName;
 
     // Atualiza estado visual dos chips
     document.querySelectorAll('.chip-btn').forEach(btn => btn.classList.remove('active'));
-    if (chipElement) chipElement.classList.add('active');
-
-    // Remove destaque anterior de bloco
-    if (state.activeBlockBox) {
-      state.map.removeLayer(state.activeBlockBox);
-      state.activeBlockBox = null;
+    if (chipElement) {
+      chipElement.classList.add('active');
+      chipElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    } else {
+      const buttons = document.querySelectorAll('.chip-btn');
+      buttons.forEach(btn => {
+        if (!blockName && btn.innerText === 'Todos') btn.classList.add('active');
+        if (blockName && btn.innerText === `Bloco ${blockName}`) {
+          btn.classList.add('active');
+          btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+      });
     }
 
+    // Remove máscara anterior de foco
+    if (state.activeBlockMask) {
+      state.map.removeLayer(state.activeBlockMask);
+      state.activeBlockMask = null;
+    }
+
+    const banner = document.getElementById('blockFocusBanner');
+    const tray = document.getElementById('blockLotsTray');
+    const genControl = document.getElementById('mapGeneralControl');
+
     if (!blockName) {
+      // Modo Mapa Geral: esconde banner e bandeja, reexibe controle geral e FAB
+      if (banner) banner.style.display = 'none';
+      if (tray) tray.style.display = 'none';
+      if (genControl) genControl.style.display = 'flex';
+      const fab = document.querySelector('.fab-container');
+      if (fab) fab.style.display = 'flex';
+
       // Zoom em todo o loteamento
       state.map.fitBounds([[0, 0], [MAP_DIMENSIONS.height, MAP_DIMENSIONS.width]], {
         padding: [20, 20],
         animate: true,
-        duration: 1
+        duration: 0.8
       });
       updateMarkersVisibility();
       return;
@@ -195,18 +228,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const meta = BLOCKS_METADATA[blockName];
     if (meta) {
-      const p1 = pixelToLatLng(meta.x1 - 40, meta.y1 - 30);
-      const p2 = pixelToLatLng(meta.x2 + 40, meta.y2 + 30);
-      const blockBounds = L.latLngBounds(p1, p2);
+      const padX = 40;
+      const padY = 30;
+      const boxLeft = meta.x1 - padX;
+      const boxRight = meta.x2 + padX;
+      const boxTop = meta.y1 - padY;
+      const boxBottom = meta.y2 + padY;
 
-      // Desenha retângulo suave destacando o bloco
-      state.activeBlockBox = L.rectangle(blockBounds, {
-        color: '#0284c7',
-        weight: 2,
-        fillColor: '#0284c7',
-        fillOpacity: 0.08,
-        dashArray: '6, 6'
+      // Cria máscara escura translúcida (isole o bloco e escurece o restante do mapa)
+      const outerRing = [
+        [-4000, -4000],
+        [MAP_DIMENSIONS.height + 4000, -4000],
+        [MAP_DIMENSIONS.height + 4000, MAP_DIMENSIONS.width + 4000],
+        [-4000, MAP_DIMENSIONS.width + 4000]
+      ];
+      const innerRing = [
+        [MAP_DIMENSIONS.height - boxTop, boxLeft],
+        [MAP_DIMENSIONS.height - boxBottom, boxLeft],
+        [MAP_DIMENSIONS.height - boxBottom, boxRight],
+        [MAP_DIMENSIONS.height - boxTop, boxRight]
+      ];
+
+      state.activeBlockMask = L.polygon([outerRing, innerRing], {
+        color: '#0f172a',
+        fillColor: '#0f172a',
+        fillOpacity: 0.86,
+        weight: 1.5,
+        interactive: false
       }).addTo(state.map);
+
+      const p1 = pixelToLatLng(boxLeft, boxTop);
+      const p2 = pixelToLatLng(boxRight, boxBottom);
+      const blockBounds = L.latLngBounds(p1, p2);
 
       state.map.fitBounds(blockBounds, {
         padding: [50, 50],
@@ -214,7 +267,53 @@ document.addEventListener('DOMContentLoaded', () => {
         duration: 0.8
       });
 
+      // Atualiza banner superior de foco
+      const lotsOfBlock = LOTS_DATA.filter(l => l.block === blockName);
+      const occCount = lotsOfBlock.filter(l => !!state.neighbors[l.id]).length;
+      if (banner) {
+        document.getElementById('focusBlockTitle').innerText = `Bloco ${blockName}`;
+        document.getElementById('focusBlockSubtitle').innerText = `${lotsOfBlock.length} lotes • ${occCount} ${occCount === 1 ? 'vizinho cadastrado' : 'vizinhos cadastrados'}`;
+        banner.style.display = 'flex';
+      }
+
+      // Atualiza bandeja inferior de lotes do bloco
+      if (tray) {
+        document.getElementById('trayTitle').innerText = `Lotes do Bloco ${blockName}:`;
+        const trayContainer = document.getElementById('lotsChipsContainer');
+        trayContainer.innerHTML = lotsOfBlock.map(l => {
+          const isOcc = !!state.neighbors[l.id];
+          const n = state.neighbors[l.id];
+          const shortName = isOcc && n.name ? n.name.split(' ')[0] : '';
+          return `
+            <button type="button" class="lot-tray-chip ${isOcc ? 'occ' : 'avail'}" onclick="window.app.handleTrayLotClick('${l.id}')" title="Lote ${l.lot} ${isOcc ? '• ' + n.name : '• Disponível'}">
+              <span class="dot"></span> Lote ${String(l.lot).padStart(2, '0')} ${isOcc ? `(${shortName})` : ''}
+            </button>
+          `;
+        }).join('');
+        tray.style.display = 'block';
+      }
+
+      if (genControl) genControl.style.display = 'none';
+      const fab = document.querySelector('.fab-container');
+      if (fab) fab.style.display = 'none';
+
       updateMarkersVisibility();
+    }
+  }
+
+  function clearBlockFocus() {
+    focusBlock(null);
+  }
+
+  function handleTrayLotClick(lotId) {
+    const lot = LOTS_BY_ID[lotId];
+    if (!lot) return;
+    focusLotOnMap(lotId);
+    const neighbor = state.neighbors[lotId];
+    if (neighbor) {
+      showNeighborProfileModal(neighbor, lot);
+    } else {
+      openRegisterModal(lot.block, lot.lot);
     }
   }
 
@@ -251,13 +350,20 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================================================================
   // Modal de Cadastro
   function openRegisterModal(prefillBlock = 'A', prefillLot = 1) {
+    state.isEditing = false;
+    state.editingLotId = null;
+
     const modal = document.getElementById('registerModal');
+    const titleEl = document.getElementById('regModalTitle');
+    const submitBtn = document.getElementById('btnSubmitRegister');
     const blockSelect = document.getElementById('regBlock');
     const lotSelect = document.getElementById('regLot');
     const nameInput = document.getElementById('regName');
     const phoneInput = document.getElementById('regPhone');
-    const statusSelect = document.getElementById('regStatus');
     const messageInput = document.getElementById('regMessage');
+
+    if (titleEl) titleEl.innerHTML = `<span>📝</span> Cadastrar Meu Terreno`;
+    if (submitBtn) submitBtn.innerHTML = `💾 Salvar e Compartilhar`;
 
     // Popula blocos
     blockSelect.innerHTML = AVAILABLE_BLOCKS.map(b => `<option value="${b}">Bloco ${b}</option>`).join('');
@@ -273,8 +379,44 @@ document.addEventListener('DOMContentLoaded', () => {
     // Limpa campos
     nameInput.value = '';
     phoneInput.value = '';
-    statusSelect.value = 'Em obras';
     messageInput.value = '';
+
+    modal.classList.add('active');
+    setTimeout(() => nameInput.focus(), 150);
+  }
+
+  // Modal de Edição de Dados do Lote
+  function openEditModal(neighbor, lot) {
+    state.isEditing = true;
+    state.editingLotId = neighbor.id || lot.id;
+
+    const modal = document.getElementById('registerModal');
+    const titleEl = document.getElementById('regModalTitle');
+    const submitBtn = document.getElementById('btnSubmitRegister');
+    const blockSelect = document.getElementById('regBlock');
+    const lotSelect = document.getElementById('regLot');
+    const nameInput = document.getElementById('regName');
+    const phoneInput = document.getElementById('regPhone');
+    const messageInput = document.getElementById('regMessage');
+
+    if (titleEl) titleEl.innerHTML = `<span>✏️</span> Editar Dados do Lote`;
+    if (submitBtn) submitBtn.innerHTML = `💾 Atualizar Dados`;
+
+    // Popula blocos e fixa no bloco atual
+    blockSelect.innerHTML = AVAILABLE_BLOCKS.map(b => `<option value="${b}">Bloco ${b}</option>`).join('');
+    blockSelect.value = neighbor.block;
+
+    // Popula lotes e seleciona lote atual
+    updateLotSelectOptions(neighbor.block, neighbor.lot);
+    lotSelect.value = neighbor.lot;
+
+    blockSelect.onchange = () => {
+      updateLotSelectOptions(blockSelect.value, 1);
+    };
+
+    nameInput.value = neighbor.name || '';
+    phoneInput.value = neighbor.phone || '';
+    messageInput.value = neighbor.message || '';
 
     modal.classList.add('active');
     setTimeout(() => nameInput.focus(), 150);
@@ -285,13 +427,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const lotsOfBlock = LOTS_DATA.filter(l => l.block === blockName);
     lotSelect.innerHTML = lotsOfBlock.map(l => {
       const isOcc = !!state.neighbors[l.id];
-      return `<option value="${l.lot}">${l.lot} ${isOcc ? '(Ocupado - Atualizar)' : ''}</option>`;
+      const isCurrentEditing = state.isEditing && state.editingLotId === l.id;
+      return `<option value="${l.lot}">${l.lot} ${isOcc && !isCurrentEditing ? '(Ocupado)' : ''}</option>`;
     }).join('');
     lotSelect.value = selectedLot;
   }
 
   function closeRegisterModal() {
     document.getElementById('registerModal').classList.remove('active');
+    state.isEditing = false;
+    state.editingLotId = null;
   }
 
   async function handleRegisterSubmit(e) {
@@ -300,7 +445,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const lot = parseInt(document.getElementById('regLot').value, 10);
     const name = document.getElementById('regName').value.trim();
     const phone = document.getElementById('regPhone').value.trim();
-    const status = document.getElementById('regStatus').value;
     const message = document.getElementById('regMessage').value.trim();
 
     if (!name) {
@@ -324,11 +468,10 @@ document.addEventListener('DOMContentLoaded', () => {
         lot,
         name,
         phone,
-        status,
         message
       });
 
-      showToast(`Lote ${lotId} cadastrado com sucesso! 🎉`);
+      showToast(state.isEditing ? `Dados do Lote ${lotId} atualizados! 🎉` : `Lote ${lotId} cadastrado com sucesso! 🎉`);
       closeRegisterModal();
       focusLotOnMap(lotId);
     } catch (err) {
@@ -336,7 +479,7 @@ document.addEventListener('DOMContentLoaded', () => {
       alert('Erro ao salvar lote. Verifique sua conexão.');
     } finally {
       submitBtn.disabled = false;
-      submitBtn.innerText = 'Salvar e Compartilhar';
+      submitBtn.innerText = state.isEditing ? '💾 Atualizar Dados' : '💾 Salvar e Compartilhar';
     }
   }
 
@@ -346,16 +489,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const avatar = document.getElementById('neighborAvatar');
     const nameEl = document.getElementById('neighborName');
     const locationEl = document.getElementById('neighborLocation');
-    const statusEl = document.getElementById('neighborStatus');
     const messageBox = document.getElementById('neighborMessageBox');
     const whatsappBtn = document.getElementById('neighborWhatsappBtn');
+    const editBtn = document.getElementById('btnEditLot');
     const deleteBtn = document.getElementById('btnDeleteLot');
 
     const initial = (neighbor.name || 'V')[0].toUpperCase();
     avatar.innerText = initial;
     nameEl.innerText = neighbor.name;
     locationEl.innerText = `Quadra / Bloco ${neighbor.block} • Lote ${neighbor.lot} (${lot.phase || 'Residencial'})`;
-    statusEl.innerText = neighbor.status || 'Comprador';
 
     if (neighbor.message) {
       messageBox.style.display = 'block';
@@ -371,7 +513,15 @@ document.addEventListener('DOMContentLoaded', () => {
     );
     whatsappBtn.href = `https://wa.me/55${cleanPhone}?text=${prefilledText}`;
 
-    // Ação de excluir / editar
+    // Ação de editar
+    if (editBtn) {
+      editBtn.onclick = () => {
+        closeNeighborModal();
+        openEditModal(neighbor, lot);
+      };
+    }
+
+    // Ação de excluir / desocupar
     deleteBtn.onclick = async () => {
       if (confirm(`Deseja realmente remover o cadastro de ${neighbor.name} no Lote ${neighbor.id}?`)) {
         await window.storage.deleteLot(neighbor.id);
@@ -695,7 +845,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Exposição de métodos para botões inline
   window.app = {
+    scrollBlocks,
+    focusBlock,
+    clearBlockFocus,
+    handleTrayLotClick,
     openRegisterModal,
+    openEditModal,
     closeRegisterModal,
     closeNeighborModal,
     openDirectoryModal,
