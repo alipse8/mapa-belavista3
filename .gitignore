@@ -1,5 +1,6 @@
 # Arquivos temporários e de extração intermediária
 extracted/
+.firebase/
 *.tif
 *.log
 .DS_Store
