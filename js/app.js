@@ -515,12 +515,18 @@ document.addEventListener('DOMContentLoaded', () => {
       messageBox.style.display = 'none';
     }
 
-    // Configura link do WhatsApp com mensagem amigável
-    const cleanPhone = neighbor.phone.replace(/\D/g, '');
-    const prefilledText = encodeURIComponent(
-      `Olá ${neighbor.name}! Sou seu vizinho do Residencial Pacaembu (Bloco/Lote). Vi seu contato no Mapa Interativo!`
-    );
-    whatsappBtn.href = `https://wa.me/55${cleanPhone}?text=${prefilledText}`;
+    // Configura link do WhatsApp com mensagem amigável (oculta se não houver telefone)
+    const cleanPhone = (neighbor.phone || '').replace(/\D/g, '');
+    if (cleanPhone && cleanPhone.length >= 8) {
+      const prefilledText = encodeURIComponent(
+        `Olá ${neighbor.name}! Sou seu vizinho do Residencial Pacaembu (Bloco/Lote). Vi seu contato no Mapa Interativo!`
+      );
+      whatsappBtn.href = `https://wa.me/55${cleanPhone}?text=${prefilledText}`;
+      whatsappBtn.style.display = 'flex';
+    } else {
+      whatsappBtn.removeAttribute('href');
+      whatsappBtn.style.display = 'none';
+    }
 
     // Ação de editar
     if (editBtn) {
@@ -587,7 +593,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     container.innerHTML = filtered.map(n => {
       const cleanPhone = n.phone ? n.phone.replace(/\D/g, '') : '';
-      const whatsappLink = `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(`Olá ${n.name}! Sou seu vizinho no Residencial Pacaembu!`)}`;
+      const hasPhone = cleanPhone && cleanPhone.length >= 8;
+      const whatsappBtnHtml = hasPhone ? `
+        <a class="btn-whatsapp" style="height: 34px; width: 34px; padding: 0; border-radius: var(--radius-sm);" href="https://wa.me/55${cleanPhone}?text=${encodeURIComponent(`Olá ${n.name}! Sou seu vizinho no Residencial Pacaembu!`)}" target="_blank" title="Chamar no WhatsApp">
+          💬
+        </a>
+      ` : '';
+
       return `
         <div class="directory-card">
           <div class="directory-card-info">
@@ -597,13 +609,11 @@ document.addEventListener('DOMContentLoaded', () => {
             </h5>
             <p>📍 Bloco ${n.block} • Lote ${n.lot} ${n.message ? '• "' + n.message + '"' : ''}</p>
           </div>
-          <div style="display: flex; gap: 6px;">
+          <div style="display: flex; gap: 6px; align-items: center;">
             <button class="btn-secondary" style="height: 34px; padding: 0 10px; font-size: 12px;" onclick="window.app.locateAndShow('${n.id}')">
               Ver no Mapa
             </button>
-            <a class="btn-whatsapp" style="height: 34px; width: 34px; padding: 0; border-radius: var(--radius-sm);" href="${whatsappLink}" target="_blank" title="Chamar no WhatsApp">
-              💬
-            </a>
+            ${whatsappBtnHtml}
           </div>
         </div>
       `;
@@ -919,6 +929,13 @@ document.addEventListener('DOMContentLoaded', () => {
   if (dirSearch) {
     dirSearch.addEventListener('input', (e) => {
       renderDirectoryList(e.target.value);
+    });
+  }
+
+  // Ajuste dinâmico de redimensionamento para navegadores mobile (barra de endereço inferior/superior)
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => {
+      if (state.map) state.map.invalidateSize();
     });
   }
 });
