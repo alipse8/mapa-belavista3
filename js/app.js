@@ -88,14 +88,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const initial = (neighbor.name || 'V')[0].toUpperCase();
         iconHtml = `<div class="lot-pin-occupied" title="${neighbor.name}">${initial}</div>`;
       } else {
-        iconHtml = `<div class="lot-pin-empty">${lot.lot}</div>`;
+        iconHtml = `<div class="lot-pin-empty" title="Lote ${lot.lot} - Disponível"></div>`;
       }
 
       const customIcon = L.divIcon({
         className: 'lot-marker',
         html: iconHtml,
-        iconSize: isOccupied ? [24, 24] : [16, 16],
-        iconAnchor: isOccupied ? [12, 12] : [8, 8]
+        iconSize: isOccupied ? [24, 24] : [28, 28],
+        iconAnchor: isOccupied ? [12, 12] : [14, 14]
       });
 
       const marker = L.marker(latlng, { icon: customIcon });
@@ -266,19 +266,38 @@ document.addEventListener('DOMContentLoaded', () => {
         [Math.max(...lats), Math.max(...lngs)]
       );
 
-      state.map.fitBounds(blockBounds, {
-        padding: [30, 30],
-        animate: true,
-        duration: 0.8
-      });
+      const isMobile = window.innerWidth <= 768;
+      if (isMobile) {
+        // No celular (tela estreita), não force encolher o bloco inteiro em 350px.
+        // Centraliza o bloco com um nível de zoom confortável e legível:
+        const centerLat = (Math.min(...lats) + Math.max(...lats)) / 2;
+        const centerLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
+        state.map.setView([centerLat - 15, centerLng], -0.2, {
+          animate: true,
+          duration: 0.8
+        });
+      } else {
+        state.map.fitBounds(blockBounds, {
+          padding: [35, 35],
+          animate: true,
+          duration: 0.8
+        });
+      }
     } else if (meta) {
       const p1 = pixelToLatLng(meta.x1, meta.y1);
       const p2 = pixelToLatLng(meta.x2, meta.y2);
-      state.map.fitBounds(L.latLngBounds(p1, p2), { padding: [30, 30], animate: true, duration: 0.8 });
+      const isMobile = window.innerWidth <= 768;
+      if (isMobile) {
+        const centerLat = (p1[0] + p2[0]) / 2;
+        const centerLng = (p1[1] + p2[1]) / 2;
+        state.map.setView([centerLat - 15, centerLng], -0.2, { animate: true, duration: 0.8 });
+      } else {
+        state.map.fitBounds(L.latLngBounds(p1, p2), { padding: [35, 35], animate: true, duration: 0.8 });
+      }
     }
 
       // Atualiza banner superior de foco
-      const lotsOfBlock = LOTS_DATA.filter(l => l.block === blockName);
+      const lotsOfBlock = LOTS_DATA.filter(l => l.block === blockName).sort((a, b) => a.lot - b.lot);
       const occCount = lotsOfBlock.filter(l => !!state.neighbors[l.id]).length;
       if (banner) {
         document.getElementById('focusBlockTitle').innerText = `Bloco ${blockName}`;
@@ -343,7 +362,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!lot || !state.map) return;
 
     const latlng = pixelToLatLng(lot.x, lot.y);
-    state.map.setView(latlng, 1, { animate: true, duration: 0.8 });
+    const isMobile = window.innerWidth <= 768;
+    const currentZoom = state.map.getZoom();
+    const targetZoom = isMobile ? (currentZoom >= 0 ? currentZoom : 0) : 1;
+    state.map.setView(latlng, targetZoom, { animate: true, duration: 0.6 });
 
     const marker = state.markers[lotId];
     if (marker) {

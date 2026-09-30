@@ -595,45 +595,69 @@ html, body {
 }
 
 .lot-marker:hover {
-  transform: scale(1.4);
+  transform: scale(1.25);
   z-index: 1000 !important;
 }
 
+/* Lote disponível: totalmente limpo, preservando a visibilidade do mapa CAD e seu número impresso */
 .lot-pin-empty {
-  width: 14px;
-  height: 14px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.85);
-  border: 1.5px solid var(--gray-400);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+  background: transparent;
+  border: 1.5px dashed transparent;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 8px;
-  font-weight: 700;
-  color: var(--gray-600);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: transparent;
 }
 
+.lot-pin-empty:hover {
+  background: rgba(37, 99, 235, 0.15);
+  border-color: rgba(37, 99, 235, 0.6);
+  color: #2563eb;
+}
+
+.lot-pin-empty:hover::after {
+  content: '+';
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Lote ocupado: badge verde com inicial do vizinho */
 .lot-pin-occupied {
   width: 22px;
   height: 22px;
   border-radius: 50%;
   background: linear-gradient(135deg, #10b981, #059669);
   border: 2px solid white;
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.6), 0 0 0 3px rgba(16, 185, 129, 0.25);
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   font-size: 10px;
   font-weight: bold;
-  animation: pulse-badge 2.5s infinite;
+  animation: pulse-badge 3s infinite;
 }
 
 @keyframes pulse-badge {
-  0% { box-shadow: 0 2px 8px rgba(16, 185, 129, 0.6), 0 0 0 0px rgba(16, 185, 129, 0.4); }
-  70% { box-shadow: 0 2px 8px rgba(16, 185, 129, 0.6), 0 0 0 8px rgba(16, 185, 129, 0); }
-  100% { box-shadow: 0 2px 8px rgba(16, 185, 129, 0.6), 0 0 0 0px rgba(16, 185, 129, 0); }
+  0% { box-shadow: 0 2px 6px rgba(16, 185, 129, 0.45), 0 0 0 0px rgba(16, 185, 129, 0.3); }
+  70% { box-shadow: 0 2px 6px rgba(16, 185, 129, 0.45), 0 0 0 5px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 2px 6px rgba(16, 185, 129, 0.45), 0 0 0 0px rgba(16, 185, 129, 0); }
+}
+
+@media (max-width: 768px) {
+  .lot-pin-occupied {
+    width: 20px;
+    height: 20px;
+    font-size: 9px;
+    border-width: 1.5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  }
 }
 
 .custom-tooltip {
