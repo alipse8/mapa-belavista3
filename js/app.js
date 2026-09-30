@@ -140,8 +140,15 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!marker) return;
 
       const isOccupied = !!state.neighbors[lot.id];
-      const isBlockFocused = state.currentBlock && state.currentBlock === lot.block;
-      const shouldShow = isOccupied || isBlockFocused;
+      let shouldShow = false;
+
+      if (state.currentBlock) {
+        // Quando um bloco está em foco, mostra EXCLUSIVAMENTE os lotes deste bloco
+        shouldShow = (state.currentBlock === lot.block);
+      } else {
+        // No mapa geral, mostra apenas os lotes com vizinhos cadastrados
+        shouldShow = isOccupied;
+      }
 
       const isCurrentlyOnMap = state.map.hasLayer(marker);
       if (shouldShow && !isCurrentlyOnMap) {

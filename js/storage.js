@@ -72,14 +72,16 @@ class LotStorage {
   loadFromLocal() {
     try {
       const data = localStorage.getItem(this.storageKey);
+      const defaults = (typeof DEFAULT_NEIGHBORS !== 'undefined') ? DEFAULT_NEIGHBORS : {};
       if (data) {
-        this.cache = JSON.parse(data);
+        const parsed = JSON.parse(data);
+        this.cache = { ...defaults, ...parsed };
       } else {
-        this.cache = {};
+        this.cache = { ...defaults };
       }
     } catch (e) {
       console.error('Erro ao ler LocalStorage:', e);
-      this.cache = {};
+      this.cache = (typeof DEFAULT_NEIGHBORS !== 'undefined') ? { ...DEFAULT_NEIGHBORS } : {};
     }
   }
 
