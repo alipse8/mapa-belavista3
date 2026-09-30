@@ -42,7 +42,7 @@
 
 html, body {
   font-family: var(--font);
-  background-color: var(--gray-900);
+  background-color: #ffffff;
   color: var(--gray-800);
   overflow: hidden;
   height: 100%;
@@ -568,7 +568,7 @@ html, body {
   width: 100vw;
   height: 100%;
   height: 100dvh;
-  background: #cbd5e1;
+  background: #ffffff;
   outline: none;
 }
 
