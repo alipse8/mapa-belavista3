@@ -342,6 +342,19 @@ body {
 }
 
 /* Leaflet Custom Marker & Popup Overrides */
+.leaflet-top.leaflet-left {
+  top: 128px;
+  left: 16px;
+  transition: top 0.2s;
+}
+
+@media (max-width: 640px) {
+  .leaflet-top.leaflet-left {
+    top: 116px;
+    left: 12px;
+  }
+}
+
 .lot-marker {
   display: flex;
   align-items: center;
@@ -882,11 +895,21 @@ textarea.form-control {
 @media (max-width: 640px) {
   .app-header {
     height: 56px;
-    padding: 0 12px;
+    padding: 0 8px;
+    gap: 6px;
+  }
+  
+  .brand-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+    border-radius: 8px;
   }
   
   .brand-info h1 {
-    font-size: 13px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
   }
   
   .brand-info p {
@@ -894,37 +917,70 @@ textarea.form-control {
   }
   
   .header-search {
-    margin: 0 8px;
+    margin: 0 4px;
+    min-width: 110px;
+  }
+
+  .search-input-wrapper input {
+    height: 36px;
+    font-size: 11px;
+    padding: 0 28px 0 28px;
+  }
+
+  .search-icon {
+    left: 8px;
+    font-size: 12px;
+  }
+
+  .header-actions {
+    gap: 4px;
+  }
+
+  .btn-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    font-size: 13px;
+  }
+
+  .header-actions .btn-primary {
+    height: 34px;
+    padding: 0 8px;
+    font-size: 11px;
   }
 
   .header-actions .btn-primary span {
     display: none;
   }
-
-  .header-actions .btn-primary {
-    padding: 0 10px;
-  }
   
   .block-navigator-bar {
-    top: 64px;
+    top: 62px;
     left: 8px;
     right: 8px;
   }
 
-  .fab-main span {
-    display: none;
+  .chip-btn {
+    padding: 4px 10px;
+    font-size: 11px;
   }
 
   .fab-main {
     width: 48px;
     height: 48px;
     padding: 0;
+    border-radius: 50%;
     justify-content: center;
+    font-size: 18px;
+  }
+
+  .fab-main span {
+    display: inline;
+    font-size: 22px;
   }
 
   .map-control-custom {
     bottom: 16px;
-    left: 12px;
+    left: 8px;
     font-size: 11px;
     padding: 6px 10px;
   }
