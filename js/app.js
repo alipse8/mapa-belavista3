@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const initial = (neighbor.name || 'V')[0].toUpperCase();
         iconHtml = `<div class="lot-pin-occupied" title="${neighbor.name}">${initial}</div>`;
       } else {
-        iconHtml = `<div class="lot-pin-empty" title="Lote ${lot.lot} - Disponível"></div>`;
+        iconHtml = `<div class="lot-pin-empty" title="Lote ${lot.lot}"></div>`;
       }
 
       const customIcon = L.divIcon({
@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Tooltip informativo
       const tooltipText = isOccupied
         ? `<strong>Quadra / Bloco ${lot.block} • Lote ${lot.lot}</strong><br>👤 ${neighbor.name}<br>💬 Clique para ver dados`
-        : `<strong>Quadra / Bloco ${lot.block} • Lote ${lot.lot}</strong><br>Disponível • Clique para cadastrar`;
+        : `<strong>Quadra / Bloco ${lot.block} • Lote ${lot.lot}</strong><br>Clique para cadastrar`;
 
       marker.bindTooltip(tooltipText, {
         className: 'custom-tooltip',
@@ -314,7 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const n = state.neighbors[l.id];
           const shortName = isOcc && n.name ? n.name.split(' ')[0] : '';
           return `
-            <button type="button" class="lot-tray-chip ${isOcc ? 'occ' : 'avail'}" onclick="window.app.handleTrayLotClick('${l.id}')" title="Lote ${l.lot} ${isOcc ? '• ' + n.name : '• Disponível'}">
+            <button type="button" class="lot-tray-chip ${isOcc ? 'occ' : 'avail'}" onclick="window.app.handleTrayLotClick('${l.id}')" title="Lote ${l.lot} ${isOcc ? '• ' + n.name : ''}">
               <span class="dot"></span> Lote ${String(l.lot).padStart(2, '0')} ${isOcc ? `(${shortName})` : ''}
             </button>
           `;
