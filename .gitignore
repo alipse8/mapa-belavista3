@@ -1,0 +1,6 @@
+# Arquivos temporários e de extração intermediária
+extracted/
+*.tif
+*.log
+.DS_Store
+Thumbs.db
