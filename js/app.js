@@ -14,6 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
     activeBlockMask: null,
     isEditing: false,
     editingLotId: null,
+    mapMode: 'clean', // 'clean' ou 'original'
+    imgOverlay: null,
   };
 
   // =========================================================================
@@ -35,14 +37,14 @@ document.addEventListener('DOMContentLoaded', () => {
       maxBoundsViscosity: 0.8
     });
 
-    // Imagem do mapa (suporta WebP com fallback)
-    const imgOverlay = L.imageOverlay('assets/mapa.webp', bounds, {
-      alt: 'Mapa de Implantação Pacaembu'
+    // Imagem do mapa minimalista limpo (sem árvores, áreas verdes ou linhas vermelhas)
+    state.imgOverlay = L.imageOverlay('assets/mapa_clean.webp', bounds, {
+      alt: 'Mapa Minimalista Pacaembu'
     }).addTo(state.map);
 
-    // Se o navegador não suportar WebP, fallback para JPG
-    imgOverlay.on('error', () => {
-      imgOverlay.setUrl('assets/mapa.jpg');
+    // Fallback caso mapa_clean não esteja disponível
+    state.imgOverlay.on('error', () => {
+      state.imgOverlay.setUrl('assets/mapa.webp');
     });
 
     // Ajusta visão inicial para ver todo o loteamento
@@ -226,46 +228,45 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    const capsulePts = (typeof BLOCK_CAPSULES !== 'undefined' && BLOCK_CAPSULES[blockName]) ? BLOCK_CAPSULES[blockName] : null;
     const meta = BLOCKS_METADATA[blockName];
-    if (meta) {
-      const padX = 40;
-      const padY = 30;
-      const boxLeft = meta.x1 - padX;
-      const boxRight = meta.x2 + padX;
-      const boxTop = meta.y1 - padY;
-      const boxBottom = meta.y2 + padY;
 
-      // Cria máscara escura translúcida (isole o bloco e escurece o restante do mapa)
+    if (capsulePts) {
+      // Converte coordenadas da cápsula exata do bloco para LatLng
+      const innerRing = capsulePts.map(([x, y]) => pixelToLatLng(x, y));
       const outerRing = [
-        [-4000, -4000],
-        [MAP_DIMENSIONS.height + 4000, -4000],
-        [MAP_DIMENSIONS.height + 4000, MAP_DIMENSIONS.width + 4000],
-        [-4000, MAP_DIMENSIONS.width + 4000]
-      ];
-      const innerRing = [
-        [MAP_DIMENSIONS.height - boxTop, boxLeft],
-        [MAP_DIMENSIONS.height - boxBottom, boxLeft],
-        [MAP_DIMENSIONS.height - boxBottom, boxRight],
-        [MAP_DIMENSIONS.height - boxTop, boxRight]
+        [-5000, -5000],
+        [MAP_DIMENSIONS.height + 5000, -5000],
+        [MAP_DIMENSIONS.height + 5000, MAP_DIMENSIONS.width + 5000],
+        [-5000, MAP_DIMENSIONS.width + 5000]
       ];
 
+      // Máscara com recorte preciso na borda da cápsula do bloco: SOMENTE O BLOCO FICA VISÍVEL!
       state.activeBlockMask = L.polygon([outerRing, innerRing], {
         color: '#0f172a',
         fillColor: '#0f172a',
-        fillOpacity: 0.86,
-        weight: 1.5,
+        fillOpacity: 0.94,
+        weight: 2,
         interactive: false
       }).addTo(state.map);
 
-      const p1 = pixelToLatLng(boxLeft, boxTop);
-      const p2 = pixelToLatLng(boxRight, boxBottom);
-      const blockBounds = L.latLngBounds(p1, p2);
+      const lats = innerRing.map(p => p[0]);
+      const lngs = innerRing.map(p => p[1]);
+      const blockBounds = L.latLngBounds(
+        [Math.min(...lats), Math.min(...lngs)],
+        [Math.max(...lats), Math.max(...lngs)]
+      );
 
       state.map.fitBounds(blockBounds, {
-        padding: [50, 50],
+        padding: [30, 30],
         animate: true,
         duration: 0.8
       });
+    } else if (meta) {
+      const p1 = pixelToLatLng(meta.x1, meta.y1);
+      const p2 = pixelToLatLng(meta.x2, meta.y2);
+      state.map.fitBounds(L.latLngBounds(p1, p2), { padding: [30, 30], animate: true, duration: 0.8 });
+    }
 
       // Atualiza banner superior de foco
       const lotsOfBlock = LOTS_DATA.filter(l => l.block === blockName);
@@ -293,12 +294,11 @@ document.addEventListener('DOMContentLoaded', () => {
         tray.style.display = 'block';
       }
 
-      if (genControl) genControl.style.display = 'none';
-      const fab = document.querySelector('.fab-container');
-      if (fab) fab.style.display = 'none';
+    if (genControl) genControl.style.display = 'none';
+    const fab = document.querySelector('.fab-container');
+    if (fab) fab.style.display = 'none';
 
-      updateMarkersVisibility();
-    }
+    updateMarkersVisibility();
   }
 
   function clearBlockFocus() {
@@ -843,6 +843,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.storage.init();
 
+  function toggleMapMode() {
+    if (!state.imgOverlay) return;
+    if (state.mapMode === 'clean') {
+      state.mapMode = 'original';
+      state.imgOverlay.setUrl('assets/mapa.webp');
+      const btn = document.getElementById('btnToggleMapMode');
+      if (btn) btn.title = 'Planta Original ativa. Clique para voltar ao Minimalista';
+      showToast('Visualizando: Planta Original do Livro');
+    } else {
+      state.mapMode = 'clean';
+      state.imgOverlay.setUrl('assets/mapa_clean.webp');
+      const btn = document.getElementById('btnToggleMapMode');
+      if (btn) btn.title = 'Mapa Minimalista ativo. Clique para ver Planta Original';
+      showToast('Visualizando: Mapa Minimalista (Sem árvores/linhas)');
+    }
+  }
+
   // Exposição de métodos para botões inline
   window.app = {
     scrollBlocks,
@@ -860,6 +877,7 @@ document.addEventListener('DOMContentLoaded', () => {
     openConfigModal,
     closeConfigModal,
     saveConfigFromModal,
+    toggleMapMode,
     shareMap,
     locateAndShow: (lotId) => {
       closeDirectoryModal();

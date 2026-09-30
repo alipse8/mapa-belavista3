@@ -58,8 +58,8 @@
       <button class="btn-icon" onclick="window.app.openStatsModal()" title="Estatísticas do Bairro">
         📊
       </button>
-      <button class="btn-icon" onclick="window.app.openConfigModal()" title="Configurações e Nuvem">
-        ⚙️
+      <button class="btn-icon" id="btnToggleMapMode" onclick="window.app.toggleMapMode()" title="Alternar entre Mapa Minimalista e Planta Original">
+        🎨
       </button>
       <button class="btn-primary" onclick="window.app.openRegisterModal()">
         <span>+</span> Cadastrar Lote
@@ -337,6 +337,7 @@
 
   <!-- Scripts da Aplicação -->
   <script src="js/lots-data.js"></script>
+  <script src="js/block-capsules.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/app.js"></script>
 </body>
