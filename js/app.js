@@ -102,8 +102,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Tooltip informativo
       const tooltipText = isOccupied
-        ? `<strong>Quadra / Bloco ${lot.block} • Lote ${lot.lot}</strong><br>👤 ${neighbor.name}<br>💬 Clique para ver dados`
-        : `<strong>Quadra / Bloco ${lot.block} • Lote ${lot.lot}</strong><br>Clique para cadastrar`;
+        ? `<strong>Bloco ${lot.block} • Lote ${lot.lot}</strong><br>👤 ${neighbor.name}<br>💬 Clique para ver dados`
+        : `<strong>Bloco ${lot.block} • Lote ${lot.lot}</strong><br>Clique para cadastrar`;
 
       marker.bindTooltip(tooltipText, {
         className: 'custom-tooltip',
@@ -528,7 +528,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const initial = (neighbor.name || 'V')[0].toUpperCase();
     avatar.innerText = initial;
     nameEl.innerText = neighbor.name;
-    locationEl.innerText = `Quadra / Bloco ${neighbor.block} • Lote ${neighbor.lot} (${lot.phase || 'Residencial'})`;
+    locationEl.innerText = `Bloco ${neighbor.block} • Lote ${neighbor.lot}`;
 
     if (neighbor.message) {
       messageBox.style.display = 'block';
@@ -680,7 +680,7 @@ document.addEventListener('DOMContentLoaded', () => {
           return `
             <div class="search-item" onclick="window.app.selectSearchItem('${l.id}')">
               <div>
-                <div class="search-item-title">Quadra / Bloco ${l.block} • Lote ${l.lot}</div>
+                <div class="search-item-title">Bloco ${l.block} • Lote ${l.lot}</div>
                 <div class="search-item-sub">${isOcc ? '👤 ' + neighbor.name : 'Terreno disponível'}</div>
               </div>
               <span class="search-item-badge ${isOcc ? 'occupied' : ''}">

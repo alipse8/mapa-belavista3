@@ -254,7 +254,7 @@ class LotStorage {
     const items = Object.values(this.cache);
     if (!items.length) return '';
 
-    const headers = ['ID', 'Quadra/Bloco', 'Lote', 'Nome', 'Telefone', 'Status', 'Mensagem', 'Data Cadastro'];
+    const headers = ['ID', 'Bloco', 'Lote', 'Nome', 'Telefone', 'Status', 'Mensagem', 'Data Cadastro'];
     const rows = items.map(item => [
       `"${item.id}"`,
       `"${item.block}"`,
