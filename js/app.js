@@ -18,6 +18,8 @@ document.addEventListener('DOMContentLoaded', () => {
     imgOverlay: null,
   };
 
+  const AVAILABLE_BLOCKS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U'];
+
   // =========================================================================
   // 1. INICIALIZAÇÃO DO MAPA LEAFLET
   // =========================================================================
