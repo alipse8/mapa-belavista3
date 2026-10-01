@@ -115,12 +115,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const marker = L.marker(latlng, { icon: customIcon });
 
       // Tooltip informativo
-      const statusBadge = isPre
-        ? `<span style="display:inline-block; font-size:10px; background:#ffedd5; color:#c2410c; padding:1px 6px; border-radius:10px; font-weight:700; margin-left:4px;">Pré-cadastro</span>`
-        : `<span style="display:inline-block; font-size:10px; background:#dcfce7; color:#15803d; padding:1px 6px; border-radius:10px; font-weight:700; margin-left:4px;">Confirmado</span>`;
-
       const tooltipText = isOccupied
-        ? `<strong>Bloco ${lot.block} • Lote ${lot.lot}</strong> ${statusBadge}<br>👤 ${neighbor.name}<br>💬 Clique para ver dados`
+        ? `<strong>Bloco ${lot.block} • Lote ${lot.lot}</strong><br>👤 ${neighbor.name}<br>💬 Clique para ver dados`
         : `<strong>Bloco ${lot.block} • Lote ${lot.lot}</strong><br>Clique para cadastrar`;
 
       marker.bindTooltip(tooltipText, {
@@ -555,10 +551,7 @@ document.addEventListener('DOMContentLoaded', () => {
       avatar.style.background = 'linear-gradient(135deg, #10b981, #059669)';
     }
     nameEl.innerText = neighbor.name;
-    const statusTag = isPre
-      ? `<span style="font-size: 11px; background: #ffedd5; color: #c2410c; padding: 2px 8px; border-radius: 12px; font-weight: 700; margin-left: 6px;">Pré-cadastro</span>`
-      : `<span style="font-size: 11px; background: #dcfce7; color: #15803d; padding: 2px 8px; border-radius: 12px; font-weight: 700; margin-left: 6px;">Confirmado</span>`;
-    locationEl.innerHTML = `Bloco ${neighbor.block} • Lote ${neighbor.lot} ${statusTag}`;
+    locationEl.innerText = `Bloco ${neighbor.block} • Lote ${neighbor.lot}`;
 
     if (neighbor.message) {
       messageBox.style.display = 'block';
