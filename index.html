@@ -106,7 +106,8 @@
     <div class="tray-header">
       <span class="tray-title" id="trayTitle">Lotes do Bloco:</span>
       <div class="tray-legend">
-        <span class="legend-chip occ"><span class="dot"></span> Ocupado</span>
+        <span class="legend-chip occ"><span class="dot"></span> Confirmado</span>
+        <span class="legend-chip pre"><span class="dot"></span> Pré-cadastro</span>
       </div>
     </div>
     <div class="lots-chips-container" id="lotsChipsContainer">
@@ -116,9 +117,15 @@
 
   <!-- Legenda e Status no canto inferior esquerdo (Mapa Geral) -->
   <div class="map-control-custom" id="mapGeneralControl">
-    <div style="display: flex; align-items: center; gap: 6px;">
-      <span class="map-legend-dot occupied"></span>
-      <span><strong class="stat-occupied-count">0</strong> Vizinhos</span>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="display: flex; align-items: center; gap: 5px;" title="Vizinhos com cadastro confirmado">
+        <span class="map-legend-dot occupied"></span>
+        <span><strong class="stat-confirmed-count">0</strong> Confirmados</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 5px;" title="Vizinhos na lista de pré-cadastro">
+        <span class="map-legend-dot pre-cadastro"></span>
+        <span><strong class="stat-pre-count">0</strong> Pré-cadastro</span>
+      </div>
     </div>
     <button onclick="window.app.shareMap()" style="background: none; border: none; color: var(--primary); cursor: pointer; font-weight: 600; margin-left: 4px;" title="Compartilhar Link">
       🔗 Compartilhar

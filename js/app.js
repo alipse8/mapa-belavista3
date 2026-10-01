@@ -71,6 +71,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================================================================
   // 2. RENDERIZAÇÃO DOS MARCADORES DE LOTES
   // =========================================================================
+  // Helper para identificar se o lote é pré-cadastro (lista preliminar) ou confirmado/atualizado
+  function isPreCadastro(neighbor) {
+    if (!neighbor) return false;
+    if (neighbor.isPreCadastro === false) return false;
+    if (neighbor.isPreCadastro === true) return true;
+    const cleanPhone = (neighbor.phone || '').replace(/\D/g, '');
+    if (cleanPhone.length >= 8) return false;
+    if (neighbor.registeredAt && neighbor.registeredAt !== '2026-09-30T18:00:00.000Z') return false;
+    return true;
+  }
+
   function renderAllLots() {
     // Limpa marcadores existentes
     Object.values(state.markers).forEach(m => state.map.removeLayer(m));
@@ -82,11 +93,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const latlng = pixelToLatLng(lot.x, lot.y);
       const neighbor = neighbors[lot.id];
       const isOccupied = !!neighbor;
+      const isPre = isOccupied && isPreCadastro(neighbor);
 
       let iconHtml = '';
       if (isOccupied) {
         const initial = (neighbor.name || 'V')[0].toUpperCase();
-        iconHtml = `<div class="lot-pin-occupied" title="${neighbor.name}">${initial}</div>`;
+        const badgeClass = isPre ? 'lot-pin-occupied pre-cadastro' : 'lot-pin-occupied confirmed';
+        const statusTitle = isPre ? 'Pré-cadastro' : 'Confirmado';
+        iconHtml = `<div class="${badgeClass}" title="${neighbor.name} (${statusTitle})">${initial}</div>`;
       } else {
         iconHtml = `<div class="lot-pin-empty" title="Lote ${lot.lot}"></div>`;
       }
@@ -101,8 +115,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const marker = L.marker(latlng, { icon: customIcon });
 
       // Tooltip informativo
+      const statusBadge = isPre
+        ? `<span style="display:inline-block; font-size:10px; background:#ffedd5; color:#c2410c; padding:1px 6px; border-radius:10px; font-weight:700; margin-left:4px;">Pré-cadastro</span>`
+        : `<span style="display:inline-block; font-size:10px; background:#dcfce7; color:#15803d; padding:1px 6px; border-radius:10px; font-weight:700; margin-left:4px;">Confirmado</span>`;
+
       const tooltipText = isOccupied
-        ? `<strong>Bloco ${lot.block} • Lote ${lot.lot}</strong><br>👤 ${neighbor.name}<br>💬 Clique para ver dados`
+        ? `<strong>Bloco ${lot.block} • Lote ${lot.lot}</strong> ${statusBadge}<br>👤 ${neighbor.name}<br>💬 Clique para ver dados`
         : `<strong>Bloco ${lot.block} • Lote ${lot.lot}</strong><br>Clique para cadastrar`;
 
       marker.bindTooltip(tooltipText, {
@@ -312,9 +330,12 @@ document.addEventListener('DOMContentLoaded', () => {
         trayContainer.innerHTML = lotsOfBlock.map(l => {
           const isOcc = !!state.neighbors[l.id];
           const n = state.neighbors[l.id];
+          const isPre = isOcc && isPreCadastro(n);
           const shortName = isOcc && n.name ? n.name.split(' ')[0] : '';
+          const chipClass = isOcc ? (isPre ? 'lot-tray-chip pre' : 'lot-tray-chip occ') : 'lot-tray-chip avail';
+          const statusText = isOcc ? (isPre ? ' (Pré-cadastro)' : ' (Confirmado)') : '';
           return `
-            <button type="button" class="lot-tray-chip ${isOcc ? 'occ' : 'avail'}" onclick="window.app.handleTrayLotClick('${l.id}')" title="Lote ${l.lot} ${isOcc ? '• ' + n.name : ''}">
+            <button type="button" class="${chipClass}" onclick="window.app.handleTrayLotClick('${l.id}')" title="Lote ${l.lot} ${isOcc ? '• ' + n.name + statusText : ''}">
               <span class="dot"></span> Lote ${String(l.lot).padStart(2, '0')} ${isOcc ? `(${shortName})` : ''}
             </button>
           `;
@@ -525,10 +546,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const editBtn = document.getElementById('btnEditLot');
     const deleteBtn = document.getElementById('btnDeleteLot');
 
+    const isPre = isPreCadastro(neighbor);
     const initial = (neighbor.name || 'V')[0].toUpperCase();
     avatar.innerText = initial;
+    if (isPre) {
+      avatar.style.background = 'linear-gradient(135deg, #f97316, #ea580c)';
+    } else {
+      avatar.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+    }
     nameEl.innerText = neighbor.name;
-    locationEl.innerText = `Bloco ${neighbor.block} • Lote ${neighbor.lot}`;
+    const statusTag = isPre
+      ? `<span style="font-size: 11px; background: #ffedd5; color: #c2410c; padding: 2px 8px; border-radius: 12px; font-weight: 700; margin-left: 6px;">Pré-cadastro</span>`
+      : `<span style="font-size: 11px; background: #dcfce7; color: #15803d; padding: 2px 8px; border-radius: 12px; font-weight: 700; margin-left: 6px;">Confirmado</span>`;
+    locationEl.innerHTML = `Bloco ${neighbor.block} • Lote ${neighbor.lot} ${statusTag}`;
 
     if (neighbor.message) {
       messageBox.style.display = 'block';
@@ -614,8 +644,12 @@ document.addEventListener('DOMContentLoaded', () => {
     filtered.sort((a, b) => a.block.localeCompare(b.block) || a.lot - b.lot);
 
     container.innerHTML = filtered.map(n => {
+      const isPre = isPreCadastro(n);
       const cleanPhone = n.phone ? n.phone.replace(/\D/g, '') : '';
       const hasPhone = cleanPhone && cleanPhone.length >= 8;
+      const statusBadge = isPre
+        ? `<span class="neighbor-status-badge" style="font-size: 10px; background: #ffedd5; color: #c2410c;">Pré-cadastro</span>`
+        : `<span class="neighbor-status-badge" style="font-size: 10px; background: #dcfce7; color: #15803d;">Confirmado</span>`;
       const whatsappBtnHtml = hasPhone ? `
         <a class="btn-whatsapp" style="height: 34px; width: 34px; padding: 0; border-radius: var(--radius-sm);" href="https://wa.me/55${cleanPhone}?text=${encodeURIComponent(`Olá ${n.name}! Sou seu vizinho no Residencial Pacaembu!`)}" target="_blank" title="Chamar no WhatsApp">
           💬
@@ -627,7 +661,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="directory-card-info">
             <h5>
               ${n.name}
-              <span class="neighbor-status-badge" style="font-size: 10px;">${n.status || 'Vizinho'}</span>
+              ${statusBadge}
             </h5>
             <p>📍 Bloco ${n.block} • Lote ${n.lot} ${n.message ? '• "' + n.message + '"' : ''}</p>
           </div>
@@ -718,11 +752,20 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================================================================
   function updateCounters() {
     const totalLots = LOTS_DATA.length;
-    const occupiedCount = Object.keys(state.neighbors).length;
+    const allNeighbors = Object.values(state.neighbors);
+    const occupiedCount = allNeighbors.length;
+    const confirmedCount = allNeighbors.filter(n => !isPreCadastro(n)).length;
+    const preCount = allNeighbors.filter(n => isPreCadastro(n)).length;
     const percent = ((occupiedCount / totalLots) * 100).toFixed(1);
 
     const countEls = document.querySelectorAll('.stat-occupied-count');
     countEls.forEach(el => el.innerText = occupiedCount);
+
+    const confirmedEls = document.querySelectorAll('.stat-confirmed-count');
+    confirmedEls.forEach(el => el.innerText = confirmedCount);
+
+    const preEls = document.querySelectorAll('.stat-pre-count');
+    preEls.forEach(el => el.innerText = preCount);
 
     const totalEls = document.querySelectorAll('.stat-total-count');
     totalEls.forEach(el => el.innerText = totalLots);
