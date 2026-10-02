@@ -4,6 +4,11 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Garante que LOTS_DATA está sempre ordenado numericamente por Bloco e Lote
+  if (typeof LOTS_DATA !== 'undefined' && Array.isArray(LOTS_DATA)) {
+    LOTS_DATA.sort((a, b) => a.block.localeCompare(b.block) || a.lot - b.lot);
+  }
+
   // Estado global da aplicação
   const state = {
     map: null,
@@ -472,7 +477,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateLotSelectOptions(blockName, selectedLot = 1) {
     const lotSelect = document.getElementById('regLot');
-    const lotsOfBlock = LOTS_DATA.filter(l => l.block === blockName);
+    const lotsOfBlock = LOTS_DATA.filter(l => l.block === blockName).sort((a, b) => a.lot - b.lot);
     lotSelect.innerHTML = lotsOfBlock.map(l => {
       const isOcc = !!state.neighbors[l.id];
       const isCurrentEditing = state.isEditing && state.editingLotId === l.id;
