@@ -118,18 +118,19 @@
 
   <!-- Legenda e Status no canto inferior esquerdo (Mapa Geral) -->
   <div class="map-control-custom" id="mapGeneralControl">
-    <div style="display: flex; align-items: center; gap: 10px;">
-      <div style="display: flex; align-items: center; gap: 5px;" title="Vizinhos com cadastro confirmado">
+    <div class="map-legend-status">
+      <div class="map-legend-item" title="Vizinhos com cadastro confirmado">
         <span class="map-legend-dot occupied"></span>
         <span><strong class="stat-confirmed-count">0</strong> Confirmados</span>
       </div>
-      <div style="display: flex; align-items: center; gap: 5px;" title="Vizinhos na lista de pré-cadastro">
+      <div class="map-legend-item" title="Vizinhos na lista de pré-cadastro">
         <span class="map-legend-dot pre-cadastro"></span>
         <span><strong class="stat-pre-count">0</strong> Pré-cadastro</span>
       </div>
     </div>
-    <button onclick="window.app.shareMap()" style="background: none; border: none; color: var(--primary); cursor: pointer; font-weight: 600; margin-left: 4px;" title="Compartilhar Link">
-      🔗 Compartilhar
+    <button type="button" class="btn-share-map" onclick="window.app.shareMap()" title="Compartilhar Link">
+      <span class="share-icon">🔗</span>
+      <span class="share-text">Compartilhar</span>
     </button>
   </div>
 
