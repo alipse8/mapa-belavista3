@@ -62,6 +62,9 @@
       <button class="btn-icon" id="btnToggleMapMode" onclick="window.app.toggleMapMode()" title="Alternar Mapa (Minimalista / Módulos e Fases / Original)">
         🎨
       </button>
+      <button class="btn-icon" id="btnTogglePhaseColor" onclick="window.app.togglePhaseColoring()" title="Marcar lotes pelas cores das Fases">
+        🏷️
+      </button>
       <button class="btn-primary" onclick="window.app.openRegisterModal()">
         <span>+</span> Cadastrar Lote
       </button>
@@ -96,6 +99,33 @@
       </button>
     </div>
   </nav>
+
+  <!-- =========================================================================
+       BARRA DE MARCAÇÃO E FILTRO POR FASES (CORES DIFERENTES POR FASE)
+       ========================================================================= -->
+  <div id="phaseNavigatorBar" class="phase-navigator-bar" style="display: none;">
+    <div class="phase-bar-inner">
+      <span class="phase-bar-title">🏷️ Fases:</span>
+      <button type="button" class="phase-btn all active" onclick="window.app.filterPhase(null)">
+        Todas
+      </button>
+      <button type="button" class="phase-btn f1m1" onclick="window.app.filterPhase('F1_M1')" title="Fase 1 • Módulo 1 (Quadras A, B, C, H, I • 270 casas)">
+        <span class="phase-dot"></span> F1 • M1
+      </button>
+      <button type="button" class="phase-btn f1m2" onclick="window.app.filterPhase('F1_M2')" title="Fase 1 • Módulo 2 (Quadras O, P, Q, R, J • 198 casas)">
+        <span class="phase-dot"></span> F1 • M2
+      </button>
+      <button type="button" class="phase-btn f1m3" onclick="window.app.filterPhase('F1_M3')" title="Fase 1 • Módulo 3 (Quadras D, E, F, G • 148 casas)">
+        <span class="phase-dot"></span> F1 • M3
+      </button>
+      <button type="button" class="phase-btn f2m1" onclick="window.app.filterPhase('F2_M1')" title="Fase 2 • Módulo 1 (Quadras K, L, M, N • 240 casas)">
+        <span class="phase-dot"></span> F2 • M1
+      </button>
+      <button type="button" class="phase-btn f2m2" onclick="window.app.filterPhase('F2_M2')" title="Fase 2 • Módulo 2 (Quadras S, T, U • 132 casas)">
+        <span class="phase-dot"></span> F2 • M2
+      </button>
+    </div>
+  </div>
 
   <!-- =========================================================================
        BANNER DE FOCO NO BLOCO (QUANDO O RESTO DO MAPA SOME)

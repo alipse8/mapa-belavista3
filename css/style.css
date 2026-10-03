@@ -257,6 +257,13 @@ html, body {
   color: var(--primary);
 }
 
+.btn-icon.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.35);
+}
+
 .btn-icon .badge-dot {
   position: absolute;
   top: 6px;
@@ -854,6 +861,182 @@ html, body {
   0% { box-shadow: 0 2px 6px rgba(249, 115, 22, 0.45), 0 0 0 0px rgba(249, 115, 22, 0.3); }
   70% { box-shadow: 0 2px 6px rgba(249, 115, 22, 0.45), 0 0 0 5px rgba(249, 115, 22, 0); }
   100% { box-shadow: 0 2px 6px rgba(249, 115, 22, 0.45), 0 0 0 0px rgba(249, 115, 22, 0); }
+}
+
+/* Marcadores coloridos por FASE (5 Zonas Oficiais) */
+.lot-pin-occupied.phase-f1m1 {
+  background: linear-gradient(135deg, #0284c7, #0369a1) !important;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.5) !important;
+  animation: pulse-phase-blue 3s infinite;
+}
+.lot-pin-occupied.phase-f1m2 {
+  background: linear-gradient(135deg, #16a34a, #15803d) !important;
+  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.5) !important;
+  animation: pulse-phase-green 3s infinite;
+}
+.lot-pin-occupied.phase-f1m3 {
+  background: linear-gradient(135deg, #e11d48, #be123c) !important;
+  box-shadow: 0 2px 6px rgba(225, 29, 72, 0.5) !important;
+  animation: pulse-phase-pink 3s infinite;
+}
+.lot-pin-occupied.phase-f2m1 {
+  background: linear-gradient(135deg, #9333ea, #7e22ce) !important;
+  box-shadow: 0 2px 6px rgba(147, 51, 234, 0.5) !important;
+  animation: pulse-phase-purple 3s infinite;
+}
+.lot-pin-occupied.phase-f2m2 {
+  background: linear-gradient(135deg, #ea580c, #c2410c) !important;
+  box-shadow: 0 2px 6px rgba(234, 88, 12, 0.5) !important;
+  animation: pulse-phase-amber 3s infinite;
+}
+
+@keyframes pulse-phase-blue {
+  0% { box-shadow: 0 2px 6px rgba(2, 132, 199, 0.5), 0 0 0 0px rgba(2, 132, 199, 0.35); }
+  70% { box-shadow: 0 2px 6px rgba(2, 132, 199, 0.5), 0 0 0 5px rgba(2, 132, 199, 0); }
+  100% { box-shadow: 0 2px 6px rgba(2, 132, 199, 0.5), 0 0 0 0px rgba(2, 132, 199, 0); }
+}
+@keyframes pulse-phase-green {
+  0% { box-shadow: 0 2px 6px rgba(22, 163, 74, 0.5), 0 0 0 0px rgba(22, 163, 74, 0.35); }
+  70% { box-shadow: 0 2px 6px rgba(22, 163, 74, 0.5), 0 0 0 5px rgba(22, 163, 74, 0); }
+  100% { box-shadow: 0 2px 6px rgba(22, 163, 74, 0.5), 0 0 0 0px rgba(22, 163, 74, 0); }
+}
+@keyframes pulse-phase-pink {
+  0% { box-shadow: 0 2px 6px rgba(225, 29, 72, 0.5), 0 0 0 0px rgba(225, 29, 72, 0.35); }
+  70% { box-shadow: 0 2px 6px rgba(225, 29, 72, 0.5), 0 0 0 5px rgba(225, 29, 72, 0); }
+  100% { box-shadow: 0 2px 6px rgba(225, 29, 72, 0.5), 0 0 0 0px rgba(225, 29, 72, 0); }
+}
+@keyframes pulse-phase-purple {
+  0% { box-shadow: 0 2px 6px rgba(147, 51, 234, 0.5), 0 0 0 0px rgba(147, 51, 234, 0.35); }
+  70% { box-shadow: 0 2px 6px rgba(147, 51, 234, 0.5), 0 0 0 5px rgba(147, 51, 234, 0); }
+  100% { box-shadow: 0 2px 6px rgba(147, 51, 234, 0.5), 0 0 0 0px rgba(147, 51, 234, 0); }
+}
+@keyframes pulse-phase-amber {
+  0% { box-shadow: 0 2px 6px rgba(234, 88, 12, 0.5), 0 0 0 0px rgba(234, 88, 12, 0.35); }
+  70% { box-shadow: 0 2px 6px rgba(234, 88, 12, 0.5), 0 0 0 5px rgba(234, 88, 12, 0); }
+  100% { box-shadow: 0 2px 6px rgba(234, 88, 12, 0.5), 0 0 0 0px rgba(234, 88, 12, 0); }
+}
+
+/* Barra de Navegação/Filtro por Fases */
+.phase-navigator-bar {
+  position: absolute;
+  top: 122px;
+  left: 12px;
+  right: 12px;
+  height: 42px;
+  z-index: 989;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  animation: banner-slide-down 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.phase-bar-inner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  pointer-events: auto;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(10px);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--gray-300);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  max-width: 95vw;
+}
+
+.phase-bar-inner::-webkit-scrollbar {
+  display: none;
+}
+
+.phase-bar-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gray-700);
+  white-space: nowrap;
+  margin-right: 2px;
+}
+
+.phase-btn {
+  padding: 5px 11px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 700;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--gray-100);
+  color: var(--gray-700);
+  transition: all 0.15s ease;
+}
+
+.phase-btn:hover {
+  transform: translateY(-1px);
+}
+
+.phase-btn:active {
+  transform: scale(0.96);
+}
+
+.phase-btn .phase-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.phase-btn.all.active {
+  background: var(--gray-900);
+  color: white;
+}
+
+.phase-btn.f1m1 .phase-dot { background: #0284c7; }
+.phase-btn.f1m1.active {
+  background: #e0f2fe;
+  color: #0369a1;
+  border-color: #0284c7;
+}
+
+.phase-btn.f1m2 .phase-dot { background: #16a34a; }
+.phase-btn.f1m2.active {
+  background: #dcfce7;
+  color: #15803d;
+  border-color: #16a34a;
+}
+
+.phase-btn.f1m3 .phase-dot { background: #e11d48; }
+.phase-btn.f1m3.active {
+  background: #ffe4e6;
+  color: #be123c;
+  border-color: #e11d48;
+}
+
+.phase-btn.f2m1 .phase-dot { background: #9333ea; }
+.phase-btn.f2m1.active {
+  background: #f3e8ff;
+  color: #7e22ce;
+  border-color: #9333ea;
+}
+
+.phase-btn.f2m2 .phase-dot { background: #ea580c; }
+.phase-btn.f2m2.active {
+  background: #ffedd5;
+  color: #c2410c;
+  border-color: #ea580c;
+}
+
+@media (max-width: 640px) {
+  .phase-navigator-bar {
+    top: 114px;
+    left: 8px;
+    right: 8px;
+  }
 }
 
 @media (max-width: 768px) {

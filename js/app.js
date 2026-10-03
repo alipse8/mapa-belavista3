@@ -19,11 +19,63 @@ document.addEventListener('DOMContentLoaded', () => {
     activeBlockMask: null,
     isEditing: false,
     editingLotId: null,
-    mapMode: 'clean', // 'clean' ou 'original'
+    mapMode: 'clean', // 'clean', 'fases' ou 'original'
+    colorByPhase: false, // se true, colore os lotes pelas cores das fases
+    currentPhase: null, // null (todas) ou 'F1_M1', 'F1_M2', etc.
     imgOverlay: null,
   };
 
   const AVAILABLE_BLOCKS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U'];
+
+  // Definição das 5 Zonas e Fases Oficiais do Empreendimento (Residencial Bela Vista III)
+  const PHASE_DATA = {
+    F1_M1: {
+      name: 'Fase 1 • Módulo 1',
+      shortName: 'F1 • M1',
+      blocks: ['A', 'B', 'C', 'H', 'I'],
+      color: '#0284c7',
+      badgeClass: 'phase-f1m1'
+    },
+    F1_M2: {
+      name: 'Fase 1 • Módulo 2',
+      shortName: 'F1 • M2',
+      blocks: ['O', 'P', 'Q', 'R', 'J'],
+      color: '#16a34a',
+      badgeClass: 'phase-f1m2'
+    },
+    F1_M3: {
+      name: 'Fase 1 • Módulo 3',
+      shortName: 'F1 • M3',
+      blocks: ['D', 'E', 'F', 'G'],
+      color: '#e11d48',
+      badgeClass: 'phase-f1m3'
+    },
+    F2_M1: {
+      name: 'Fase 2 • Módulo 1',
+      shortName: 'F2 • M1',
+      blocks: ['K', 'L', 'M', 'N'],
+      color: '#9333ea',
+      badgeClass: 'phase-f2m1'
+    },
+    F2_M2: {
+      name: 'Fase 2 • Módulo 2',
+      shortName: 'F2 • M2',
+      blocks: ['S', 'T', 'U'],
+      color: '#ea580c',
+      badgeClass: 'phase-f2m2'
+    }
+  };
+
+  function getPhaseForBlock(blockLetter) {
+    if (!blockLetter) return null;
+    const letter = blockLetter.toUpperCase();
+    for (const [phaseKey, data] of Object.entries(PHASE_DATA)) {
+      if (data.blocks.includes(letter)) {
+        return { id: phaseKey, ...data };
+      }
+    }
+    return null;
+  }
 
   // =========================================================================
   // 1. INICIALIZAÇÃO DO MAPA LEAFLET
@@ -99,12 +151,19 @@ document.addEventListener('DOMContentLoaded', () => {
       const neighbor = neighbors[lot.id];
       const isOccupied = !!neighbor;
       const isPre = isOccupied && isPreCadastro(neighbor);
+      const phase = getPhaseForBlock(lot.block);
 
       let iconHtml = '';
       if (isOccupied) {
         const initial = (neighbor.name || 'V')[0].toUpperCase();
-        const badgeClass = isPre ? 'lot-pin-occupied pre-cadastro' : 'lot-pin-occupied confirmed';
-        const statusTitle = isPre ? 'Pré-cadastro' : 'Confirmado';
+        let badgeClass = isPre ? 'lot-pin-occupied pre-cadastro' : 'lot-pin-occupied confirmed';
+        let statusTitle = isPre ? 'Pré-cadastro' : 'Confirmado';
+
+        if (state.colorByPhase && phase) {
+          badgeClass = `lot-pin-occupied ${phase.badgeClass}`;
+          statusTitle = `${statusTitle} • ${phase.name}`;
+        }
+
         iconHtml = `<div class="${badgeClass}" title="${neighbor.name} (${statusTitle})">${initial}</div>`;
       } else {
         iconHtml = `<div class="lot-pin-empty" title="Lote ${lot.lot}"></div>`;
@@ -120,9 +179,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const marker = L.marker(latlng, { icon: customIcon });
 
       // Tooltip informativo
+      const phaseBadgeHtml = (state.colorByPhase && phase)
+        ? `<div style="margin-top:2px;font-size:11px;font-weight:700;color:${phase.color}">🏷️ ${phase.name}</div>`
+        : '';
+
       const tooltipText = isOccupied
-        ? `<strong>Bloco ${lot.block} • Lote ${lot.lot}</strong><br>👤 ${neighbor.name}<br>💬 Clique para ver dados`
-        : `<strong>Bloco ${lot.block} • Lote ${lot.lot}</strong><br>Clique para cadastrar`;
+        ? `<strong>Bloco ${lot.block} • Lote ${lot.lot}</strong>${phaseBadgeHtml}<br>👤 ${neighbor.name}<br>💬 Clique para ver dados`
+        : `<strong>Bloco ${lot.block} • Lote ${lot.lot}</strong>${phaseBadgeHtml}<br>Clique para cadastrar`;
 
       marker.bindTooltip(tooltipText, {
         className: 'custom-tooltip',
@@ -141,8 +204,10 @@ document.addEventListener('DOMContentLoaded', () => {
       // REGRA DE VISIBILIDADE:
       // Se um bloco estiver focado, mostra todos os lotes desse bloco.
       // Se estiver no mapa geral, mostra APENAS os lotes ocupados para manter o mapa limpo e bonito!
+      // Se houver filtro por fase ativo, filtra também pela fase correspondente.
       const isBlockFocused = state.currentBlock && state.currentBlock === lot.block;
-      const shouldShow = isOccupied || isBlockFocused;
+      const matchesPhase = !state.currentPhase || (phase && phase.id === state.currentPhase);
+      const shouldShow = (isOccupied || isBlockFocused) && (!state.currentPhase || matchesPhase);
       if (shouldShow) {
         marker.addTo(state.map);
       }
@@ -159,6 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!marker) return;
 
       const isOccupied = !!state.neighbors[lot.id];
+      const phase = getPhaseForBlock(lot.block);
       let shouldShow = false;
 
       if (state.currentBlock) {
@@ -166,7 +232,9 @@ document.addEventListener('DOMContentLoaded', () => {
         shouldShow = (state.currentBlock === lot.block);
       } else {
         // No mapa geral, mostra apenas os lotes com vizinhos cadastrados
-        shouldShow = isOccupied;
+        // Se houver filtro por fase específico, aplica-o
+        const matchesPhase = !state.currentPhase || (phase && phase.id === state.currentPhase);
+        shouldShow = isOccupied && matchesPhase;
       }
 
       const isCurrentlyOnMap = state.map.hasLayer(marker);
@@ -270,6 +338,11 @@ document.addEventListener('DOMContentLoaded', () => {
         fab.style.display = 'flex';
       }
 
+      // Reexibe a barra de fases se a coloração por fases estiver ativa
+      if (state.colorByPhase) {
+        showPhaseNavigator(true);
+      }
+
       // Zoom em todo o loteamento
       state.map.fitBounds([[0, 0], [MAP_DIMENSIONS.height, MAP_DIMENSIONS.width]], {
         padding: [20, 20],
@@ -279,6 +352,9 @@ document.addEventListener('DOMContentLoaded', () => {
       updateMarkersVisibility();
       return;
     }
+
+    // Esconde a barra de fases para foco exclusivo no bloco
+    showPhaseNavigator(false);
 
     const capsulePts = (typeof BLOCK_CAPSULES !== 'undefined' && BLOCK_CAPSULES[blockName]) ? BLOCK_CAPSULES[blockName] : null;
     const meta = BLOCKS_METADATA[blockName];
@@ -584,7 +660,9 @@ document.addEventListener('DOMContentLoaded', () => {
       avatar.style.background = 'linear-gradient(135deg, #10b981, #059669)';
     }
     nameEl.innerText = neighbor.name;
-    locationEl.innerText = `Bloco ${neighbor.block} • Lote ${neighbor.lot}`;
+    const phase = getPhaseForBlock(neighbor.block);
+    const phaseText = phase ? ` • ${phase.name}` : '';
+    locationEl.innerText = `Bloco ${neighbor.block} • Lote ${neighbor.lot}${phaseText}`;
 
     if (neighbor.message) {
       messageBox.style.display = 'block';
@@ -961,18 +1039,86 @@ document.addEventListener('DOMContentLoaded', () => {
       state.mapMode = 'fases';
       state.imgOverlay.setUrl('assets/mapa_fases.webp');
       if (btn) btn.title = 'Mapa de Módulos e Fases ativo. Clique para ver Planta Original';
+      togglePhaseColoring(true);
       showToast('Visualizando: Mapa com Módulos e Fases Separados 🎨');
     } else if (state.mapMode === 'fases') {
       state.mapMode = 'original';
       state.imgOverlay.setUrl('assets/mapa.webp');
       if (btn) btn.title = 'Planta Original ativa. Clique para ver Mapa Minimalista';
+      togglePhaseColoring(false);
       showToast('Visualizando: Planta Original do Livro 📖');
     } else {
       state.mapMode = 'clean';
       state.imgOverlay.setUrl('assets/mapa_clean.webp');
       if (btn) btn.title = 'Mapa Minimalista ativo. Clique para ver Módulos e Fases';
+      togglePhaseColoring(false);
       showToast('Visualizando: Mapa Minimalista 📐');
     }
+  }
+
+  function showPhaseNavigator(show) {
+    const bar = document.getElementById('phaseNavigatorBar');
+    if (!bar) return;
+    if (show && !state.currentBlock) {
+      bar.style.display = 'flex';
+    } else {
+      bar.style.display = 'none';
+    }
+  }
+
+  function togglePhaseColoring(forcedState) {
+    if (typeof forcedState === 'boolean') {
+      state.colorByPhase = forcedState;
+    } else {
+      state.colorByPhase = !state.colorByPhase;
+    }
+
+    const btn = document.getElementById('btnTogglePhaseColor');
+    if (btn) {
+      btn.classList.toggle('active', state.colorByPhase);
+      btn.title = state.colorByPhase
+        ? 'Cores por Fases ativas (Clique para voltar às cores normais)'
+        : 'Marcar lotes pelas cores das Fases';
+    }
+
+    if (state.colorByPhase) {
+      showPhaseNavigator(true);
+      if (typeof forcedState !== 'boolean') {
+        showToast('🏷️ Cores por Fase ativadas!');
+      }
+    } else {
+      state.currentPhase = null;
+      document.querySelectorAll('.phase-btn').forEach(b => b.classList.remove('active'));
+      const allBtn = document.querySelector('.phase-btn.all');
+      if (allBtn) allBtn.classList.add('active');
+
+      showPhaseNavigator(false);
+      if (typeof forcedState !== 'boolean') {
+        showToast('Cores padrão restauradas');
+      }
+    }
+
+    renderAllLots();
+    updateMarkersVisibility();
+  }
+
+  function filterPhase(phaseId) {
+    state.currentPhase = phaseId;
+
+    document.querySelectorAll('.phase-btn').forEach(btn => btn.classList.remove('active'));
+    if (!phaseId) {
+      const allBtn = document.querySelector('.phase-btn.all');
+      if (allBtn) allBtn.classList.add('active');
+      showToast('Exibindo todas as fases');
+    } else {
+      const phaseClass = phaseId.toLowerCase().replace('_', '');
+      const targetBtn = document.querySelector(`.phase-btn.${phaseClass}`);
+      if (targetBtn) targetBtn.classList.add('active');
+      const p = PHASE_DATA[phaseId];
+      if (p) showToast(`Filtrando: ${p.name} (Quadras ${p.blocks.join(', ')})`);
+    }
+
+    updateMarkersVisibility();
   }
 
   // Exposição de métodos para botões inline
@@ -995,6 +1141,9 @@ document.addEventListener('DOMContentLoaded', () => {
     closeConfigModal,
     saveConfigFromModal,
     toggleMapMode,
+    togglePhaseColoring,
+    filterPhase,
+    showPhaseNavigator,
     shareMap,
     locateAndShow: (lotId) => {
       closeDirectoryModal();
