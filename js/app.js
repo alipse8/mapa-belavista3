@@ -248,7 +248,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const btn = document.createElement('button');
         btn.className = 'chip-btn';
         btn.innerText = `Bloco ${bname}`;
-        btn.onclick = () => focusBlock(bname, btn);
+        btn.onclick = () => {
+          if (state.currentBlock === bname) {
+            focusBlock(null);
+          } else {
+            focusBlock(bname, btn);
+          }
+        };
         container.appendChild(btn);
       });
     }
@@ -305,14 +311,12 @@ document.addEventListener('DOMContentLoaded', () => {
       state.activeBlockMask = null;
     }
 
-    const banner = document.getElementById('blockFocusBanner');
     const tray = document.getElementById('blockLotsTray');
     const genControl = document.getElementById('mapGeneralControl');
     const fab = document.getElementById('fabContainer') || document.querySelector('.fab-container');
 
     if (!blockName) {
-      // Modo Mapa Geral: esconde banner e bandeja, reexibe controle geral e FAB
-      if (banner) banner.style.display = 'none';
+      // Modo Mapa Geral: esconde bandeja, reexibe controle geral e FAB
       if (tray) tray.style.display = 'none';
       if (genControl) genControl.style.display = 'flex';
       if (fab) {
@@ -389,14 +393,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-      // Atualiza banner superior de foco
       const lotsOfBlock = LOTS_DATA.filter(l => l.block === blockName).sort((a, b) => a.lot - b.lot);
       const occCount = lotsOfBlock.filter(l => !!state.neighbors[l.id]).length;
-      if (banner) {
-        document.getElementById('focusBlockTitle').innerText = `Bloco ${blockName}`;
-        document.getElementById('focusBlockSubtitle').innerText = `${lotsOfBlock.length} lotes • ${occCount} ${occCount === 1 ? 'vizinho cadastrado' : 'vizinhos cadastrados'}`;
-        banner.style.display = 'flex';
-      }
 
       // Atualiza bandeja inferior de lotes do bloco
       if (tray) {

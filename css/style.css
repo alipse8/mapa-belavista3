@@ -270,7 +270,6 @@ html, body {
 .search-clear svg,
 .search-icon svg,
 .mobile-select-icon svg,
-.focus-pin-icon svg,
 .share-icon svg {
   display: block;
 }
@@ -497,104 +496,7 @@ html, body {
   transform: scale(0.96);
 }
 
-/* ==========================================================================
-   BANNER DE FOCO NO BLOCO (MAPA ISOLADO)
-   ========================================================================== */
-.block-focus-banner {
-  position: absolute;
-  top: 126px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 990;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  background: rgba(15, 23, 42, 0.94);
-  color: white;
-  padding: 8px 18px;
-  border-radius: var(--radius-full);
-  box-shadow: var(--shadow-xl);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  animation: banner-slide-down 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  max-width: 92vw;
-}
 
-@keyframes banner-slide-down {
-  from { opacity: 0; transform: translate(-50%, -12px); }
-  to { opacity: 1; transform: translate(-50%, 0); }
-}
-
-.block-focus-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.focus-pin-icon {
-  font-size: 20px;
-}
-
-.block-focus-info strong {
-  font-size: 14px;
-  font-weight: 700;
-  display: block;
-  line-height: 1.2;
-}
-
-.focus-subtitle {
-  font-size: 11px;
-  color: var(--gray-300);
-}
-
-.banner-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.btn-banner-add {
-  background: #0284c7;
-  border: 1px solid #38bdf8;
-  color: white;
-  font-size: 12px;
-  font-weight: 700;
-  padding: 6px 12px;
-  border-radius: var(--radius-full);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.btn-banner-add:hover {
-  background: #0369a1;
-}
-
-.btn-banner-add:active {
-  transform: scale(0.96);
-}
-
-.btn-back-map {
-  background: rgba(255, 255, 255, 0.16);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: white;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 6px 14px;
-  border-radius: var(--radius-full);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-}
-
-.btn-back-map:hover {
-  background: white;
-  color: var(--gray-900);
-}
 
 /* ==========================================================================
    BANDEJA INFERIOR DE LOTES DO BLOCO
@@ -640,32 +542,7 @@ html, body {
   gap: 12px;
 }
 
-.btn-tray-add {
-  height: 28px;
-  padding: 0 12px;
-  background: var(--primary);
-  color: white;
-  border: none;
-  border-radius: var(--radius-full);
-  font-size: 11px;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35);
-  white-space: nowrap;
-  transition: all 0.15s ease;
-}
 
-.btn-tray-add:hover {
-  background: var(--primary-hover);
-  transform: translateY(-1px);
-}
-
-.btn-tray-add:active {
-  transform: scale(0.96);
-}
 
 .tray-legend {
   display: flex;
@@ -1501,13 +1378,7 @@ textarea.form-control {
     left: 10px !important;
   }
 
-  .block-focus-banner {
-    display: none !important; /* No mobile a indicação e retorno são feitos pelo menu suspenso superior */
-  }
 
-  .btn-tray-add {
-    display: none !important; /* No mobile o cadastro é feito pelo botão flutuante (+) ou tocando no lote */
-  }
 
   .block-lots-tray {
     bottom: calc(24px + env(safe-area-inset-bottom, 0px));

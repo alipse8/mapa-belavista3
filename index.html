@@ -108,29 +108,6 @@
 
 
   <!-- =========================================================================
-       BANNER DE FOCO NO BLOCO (QUANDO O RESTO DO MAPA SOME)
-       ========================================================================= -->
-  <div id="blockFocusBanner" class="block-focus-banner" style="display: none;">
-    <div class="block-focus-info">
-      <span class="focus-pin-icon">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-      </span>
-      <div>
-        <strong id="focusBlockTitle">Bloco A</strong>
-        <span class="focus-subtitle" id="focusBlockSubtitle">50 lotes</span>
-      </div>
-    </div>
-    <div class="banner-actions">
-      <button class="btn-banner-add" onclick="window.app.openRegisterModal(window.app.getCurrentBlock())" title="Cadastrar lote neste bloco">
-        <span>+</span> Cadastrar
-      </button>
-      <button class="btn-back-map" onclick="window.app.clearBlockFocus()" title="Voltar ao Mapa Geral">
-        ← Ver Mapa Geral
-      </button>
-    </div>
-  </div>
-
-  <!-- =========================================================================
        CANVAS DO MAPA INTERATIVO (LEAFLET)
        ========================================================================= -->
   <div id="map"></div>
@@ -146,9 +123,6 @@
           <span class="legend-chip occ"><span class="dot"></span> Confirmado</span>
           <span class="legend-chip pre"><span class="dot"></span> Pré-cadastro</span>
         </div>
-        <button type="button" class="btn-tray-add" onclick="window.app.openRegisterModal(window.app.getCurrentBlock())" title="Cadastrar Meu Lote neste Bloco">
-          <span>+</span> Meu Lote
-        </button>
       </div>
     </div>
     <div class="lots-chips-container" id="lotsChipsContainer">
