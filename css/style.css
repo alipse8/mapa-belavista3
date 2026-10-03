@@ -291,7 +291,7 @@ html, body {
 }
 
 /* ==========================================================================
-   BLOCK NAVIGATOR (CARROSSEL COM SETAS < >)
+   BLOCK NAVIGATOR (DESKTOP: CARROSSEL | MOBILE: MENU SUSPENSO)
    ========================================================================== */
 .block-navigator-bar {
   position: absolute;
@@ -305,6 +305,15 @@ html, body {
   justify-content: center;
   gap: 6px;
   pointer-events: none;
+}
+
+/* Wrapper do Carrossel Desktop */
+.desktop-carousel-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
 }
 
 .carousel-arrow {
@@ -387,6 +396,89 @@ html, body {
   box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35);
 }
 
+/* Wrapper do Menu Suspenso Mobile */
+.mobile-navigator-wrapper {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 480px;
+  pointer-events: auto;
+}
+
+.mobile-select-box {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(12px);
+  border: 1.5px solid var(--gray-300);
+  border-radius: var(--radius-full);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  height: 42px;
+  padding: 0 12px;
+  transition: all 0.2s ease;
+}
+
+.mobile-select-box:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.25);
+}
+
+.mobile-select-icon {
+  font-size: 16px;
+  margin-right: 6px;
+  pointer-events: none;
+}
+
+.mobile-block-select {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gray-800);
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  padding-right: 22px;
+  width: 100%;
+}
+
+.mobile-select-arrow {
+  position: absolute;
+  right: 12px;
+  font-size: 13px;
+  color: var(--gray-500);
+  pointer-events: none;
+}
+
+.btn-mobile-back-map {
+  height: 42px;
+  padding: 0 14px;
+  background: rgba(15, 23, 42, 0.95);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.3);
+  backdrop-filter: blur(8px);
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  animation: banner-slide-down 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-mobile-back-map:active {
+  transform: scale(0.96);
+}
+
 /* ==========================================================================
    BANNER DE FOCO NO BLOCO (MAPA ISOLADO)
    ========================================================================== */
@@ -399,7 +491,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 14px;
   background: rgba(15, 23, 42, 0.94);
   color: white;
   padding: 8px 18px;
@@ -436,6 +528,36 @@ html, body {
 .focus-subtitle {
   font-size: 11px;
   color: var(--gray-300);
+}
+
+.banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-banner-add {
+  background: #0284c7;
+  border: 1px solid #38bdf8;
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-banner-add:hover {
+  background: #0369a1;
+}
+
+.btn-banner-add:active {
+  transform: scale(0.96);
 }
 
 .btn-back-map {
@@ -492,6 +614,39 @@ html, body {
 .tray-title {
   font-weight: 700;
   color: var(--gray-800);
+}
+
+.tray-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-tray-add {
+  height: 28px;
+  padding: 0 12px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35);
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.btn-tray-add:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.btn-tray-add:active {
+  transform: scale(0.96);
 }
 
 .tray-legend {
@@ -1306,41 +1461,43 @@ textarea.form-control {
     display: none;
   }
   
+  .desktop-carousel-wrapper {
+    display: none !important;
+  }
+
+  .mobile-navigator-wrapper {
+    display: flex !important;
+  }
+
   .block-navigator-bar {
-    top: 62px;
+    top: 64px;
     left: 8px;
     right: 8px;
+    height: 44px;
   }
 
-  .chip-btn {
-    padding: 4px 10px;
-    font-size: 11px;
-  }
-
-  .carousel-arrow {
-    width: 30px;
-    height: 30px;
-    min-width: 30px;
-    font-size: 18px;
+  .leaflet-top.leaflet-left {
+    top: 175px !important;
+    left: 10px !important;
   }
 
   .block-focus-banner {
-    top: 112px;
+    top: 116px;
     padding: 6px 12px;
-    gap: 10px;
+    gap: 8px;
+    max-width: 95vw;
   }
 
   .block-focus-info strong {
     font-size: 13px;
   }
 
-  .btn-back-map {
-    font-size: 11px;
-    padding: 5px 10px;
+  .banner-actions .btn-back-map {
+    display: none; /* No mobile o botão Voltar ao Mapa Geral fica no topo ao lado do menu suspenso */
   }
 
   .block-lots-tray {
-    bottom: calc(36px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
     left: 8px;
     right: 8px;
     padding: 10px 12px;
@@ -1390,6 +1547,13 @@ textarea.form-control {
   .fab-container {
     bottom: calc(36px + env(safe-area-inset-bottom, 0px));
     right: 16px;
+    transition: bottom 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .fab-container.has-tray {
+    bottom: calc(120px + env(safe-area-inset-bottom, 0px)) !important;
+    right: 16px;
+    z-index: 1000;
   }
 
   .fab-main {

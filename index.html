@@ -69,14 +69,32 @@
   </header>
 
   <!-- =========================================================================
-       NAVEGADOR DE BLOCOS (CARROSSEL COM SETAS < >)
+       NAVEGADOR DE BLOCOS (DESKTOP: CARROSSEL | MOBILE: MENU SUSPENSO)
        ========================================================================= -->
   <nav class="block-navigator-bar">
-    <button class="carousel-arrow prev" id="btnBlockPrev" title="Rolar para esquerda" onclick="window.app.scrollBlocks(-1)">‹</button>
-    <div class="chips-scroll-container" id="blockChipsContainer">
-      <!-- Chips gerados via JavaScript: Todos, Bloco A, B, C... U -->
+    <!-- Desktop: Carrossel com setas < > -->
+    <div class="desktop-carousel-wrapper">
+      <button class="carousel-arrow prev" id="btnBlockPrev" title="Rolar para esquerda" onclick="window.app.scrollBlocks(-1)">‹</button>
+      <div class="chips-scroll-container" id="blockChipsContainer">
+        <!-- Chips gerados via JavaScript: Todos, Bloco A, B, C... U -->
+      </div>
+      <button class="carousel-arrow next" id="btnBlockNext" title="Rolar para direita" onclick="window.app.scrollBlocks(1)">›</button>
     </div>
-    <button class="carousel-arrow next" id="btnBlockNext" title="Rolar para direita" onclick="window.app.scrollBlocks(1)">›</button>
+
+    <!-- Mobile: Menu Suspenso + Botão Voltar ao Mapa Geral -->
+    <div class="mobile-navigator-wrapper">
+      <div class="mobile-select-box">
+        <span class="mobile-select-icon">🏢</span>
+        <select id="mobileBlockSelect" class="mobile-block-select" onchange="window.app.onMobileBlockSelect(this.value)">
+          <option value="">🗺️ Ver Mapa Geral</option>
+          <!-- Options gerados via JavaScript -->
+        </select>
+        <span class="mobile-select-arrow">▾</span>
+      </div>
+      <button id="btnMobileBackMap" class="btn-mobile-back-map" onclick="window.app.clearBlockFocus()" style="display: none;" title="Voltar para a visão geral de todos os blocos">
+        ← Mapa Geral
+      </button>
+    </div>
   </nav>
 
   <!-- =========================================================================
@@ -90,9 +108,14 @@
         <span class="focus-subtitle" id="focusBlockSubtitle">50 lotes</span>
       </div>
     </div>
-    <button class="btn-back-map" onclick="window.app.clearBlockFocus()">
-      ← Ver Mapa Geral
-    </button>
+    <div class="banner-actions">
+      <button class="btn-banner-add" onclick="window.app.openRegisterModal(window.app.getCurrentBlock())" title="Cadastrar lote neste bloco">
+        <span>+</span> Cadastrar
+      </button>
+      <button class="btn-back-map" onclick="window.app.clearBlockFocus()" title="Voltar ao Mapa Geral">
+        ← Ver Mapa Geral
+      </button>
+    </div>
   </div>
 
   <!-- =========================================================================
@@ -106,9 +129,14 @@
   <div id="blockLotsTray" class="block-lots-tray" style="display: none;">
     <div class="tray-header">
       <span class="tray-title" id="trayTitle">Lotes do Bloco:</span>
-      <div class="tray-legend">
-        <span class="legend-chip occ"><span class="dot"></span> Confirmado</span>
-        <span class="legend-chip pre"><span class="dot"></span> Pré-cadastro</span>
+      <div class="tray-actions-group">
+        <div class="tray-legend">
+          <span class="legend-chip occ"><span class="dot"></span> Confirmado</span>
+          <span class="legend-chip pre"><span class="dot"></span> Pré-cadastro</span>
+        </div>
+        <button type="button" class="btn-tray-add" onclick="window.app.openRegisterModal(window.app.getCurrentBlock())" title="Cadastrar Meu Lote neste Bloco">
+          <span>+</span> Meu Lote
+        </button>
       </div>
     </div>
     <div class="lots-chips-container" id="lotsChipsContainer">
@@ -135,8 +163,8 @@
   </div>
 
   <!-- Botão Flutuante Principal (Mobile) -->
-  <div class="fab-container">
-    <button class="fab-main" onclick="window.app.openRegisterModal()" title="Cadastrar Meu Lote">
+  <div class="fab-container" id="fabContainer">
+    <button class="fab-main" onclick="window.app.openRegisterModal(window.app.getCurrentBlock())" title="Cadastrar Meu Lote">
       <span class="fab-plus">+</span><span class="fab-text"> Meu Lote</span>
     </button>
   </div>

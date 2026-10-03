@@ -182,25 +182,36 @@ document.addEventListener('DOMContentLoaded', () => {
   // 3. NAVEGADOR DE BLOCOS (CHIPS HORIZONTAIS COM CARROSSEL)
   // =========================================================================
   function initBlockNavigator() {
+    // 1. Carrossel Desktop
     const container = document.getElementById('blockChipsContainer');
-    if (!container) return;
+    if (container) {
+      container.innerHTML = '';
 
-    container.innerHTML = '';
+      // Botão "Todos"
+      const allBtn = document.createElement('button');
+      allBtn.className = 'chip-btn active';
+      allBtn.innerText = 'Todos';
+      allBtn.onclick = () => focusBlock(null, allBtn);
+      container.appendChild(allBtn);
 
-    // Botão "Todos"
-    const allBtn = document.createElement('button');
-    allBtn.className = 'chip-btn active';
-    allBtn.innerText = 'Todos';
-    allBtn.onclick = () => focusBlock(null, allBtn);
-    container.appendChild(allBtn);
+      AVAILABLE_BLOCKS.forEach(bname => {
+        const btn = document.createElement('button');
+        btn.className = 'chip-btn';
+        btn.innerText = `Bloco ${bname}`;
+        btn.onclick = () => focusBlock(bname, btn);
+        container.appendChild(btn);
+      });
+    }
 
-    AVAILABLE_BLOCKS.forEach(bname => {
-      const btn = document.createElement('button');
-      btn.className = 'chip-btn';
-      btn.innerText = `Bloco ${bname}`;
-      btn.onclick = () => focusBlock(bname, btn);
-      container.appendChild(btn);
-    });
+    // 2. Menu Suspenso Mobile
+    const mobileSelect = document.getElementById('mobileBlockSelect');
+    if (mobileSelect) {
+      mobileSelect.innerHTML = '<option value="">🗺️ Ver Mapa Geral</option>' +
+        AVAILABLE_BLOCKS.map(bname => {
+          const count = LOTS_DATA.filter(l => l.block === bname).length;
+          return `<option value="${bname}">Bloco ${bname} (${count} lotes)</option>`;
+        }).join('');
+    }
   }
 
   function scrollBlocks(direction) {
@@ -212,7 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function focusBlock(blockName, chipElement) {
     state.currentBlock = blockName;
 
-    // Atualiza estado visual dos chips
+    // Atualiza estado visual dos chips no Desktop
     document.querySelectorAll('.chip-btn').forEach(btn => btn.classList.remove('active'));
     if (chipElement) {
       chipElement.classList.add('active');
@@ -228,6 +239,16 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
+    // Atualiza Menu Suspenso e Botão Voltar no Mobile
+    const mobileSelect = document.getElementById('mobileBlockSelect');
+    if (mobileSelect) {
+      mobileSelect.value = blockName || '';
+    }
+    const btnMobileBack = document.getElementById('btnMobileBackMap');
+    if (btnMobileBack) {
+      btnMobileBack.style.display = blockName ? 'inline-flex' : 'none';
+    }
+
     // Remove máscara anterior de foco
     if (state.activeBlockMask) {
       state.map.removeLayer(state.activeBlockMask);
@@ -237,14 +258,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const banner = document.getElementById('blockFocusBanner');
     const tray = document.getElementById('blockLotsTray');
     const genControl = document.getElementById('mapGeneralControl');
+    const fab = document.getElementById('fabContainer') || document.querySelector('.fab-container');
 
     if (!blockName) {
       // Modo Mapa Geral: esconde banner e bandeja, reexibe controle geral e FAB
       if (banner) banner.style.display = 'none';
       if (tray) tray.style.display = 'none';
       if (genControl) genControl.style.display = 'flex';
-      const fab = document.querySelector('.fab-container');
-      if (fab) fab.style.display = 'flex';
+      if (fab) {
+        fab.classList.remove('has-tray');
+        fab.style.display = 'flex';
+      }
 
       // Zoom em todo o loteamento
       state.map.fitBounds([[0, 0], [MAP_DIMENSIONS.height, MAP_DIMENSIONS.width]], {
@@ -345,8 +369,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
     if (genControl) genControl.style.display = 'none';
-    const fab = document.querySelector('.fab-container');
-    if (fab) fab.style.display = 'none';
+    if (fab) {
+      fab.classList.add('has-tray');
+      fab.style.display = 'flex';
+    }
 
     updateMarkersVisibility();
   }
@@ -402,7 +428,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 5. MODAIS & FORMULÁRIOS
   // =========================================================================
   // Modal de Cadastro
-  function openRegisterModal(prefillBlock = 'A', prefillLot = 1) {
+  function openRegisterModal(prefillBlock = null, prefillLot = 1) {
     state.isEditing = false;
     state.editingLotId = null;
 
@@ -415,15 +441,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const phoneInput = document.getElementById('regPhone');
     const messageInput = document.getElementById('regMessage');
 
+    const targetBlock = prefillBlock || state.currentBlock || 'A';
+
     if (titleEl) titleEl.innerHTML = `<span>📝</span> Cadastrar Meu Terreno`;
     if (submitBtn) submitBtn.innerHTML = `💾 Salvar e Compartilhar`;
 
     // Popula blocos
     blockSelect.innerHTML = AVAILABLE_BLOCKS.map(b => `<option value="${b}">Bloco ${b}</option>`).join('');
-    blockSelect.value = prefillBlock;
+    blockSelect.value = targetBlock;
 
     // Popula lotes daquele bloco
-    updateLotSelectOptions(prefillBlock, prefillLot);
+    updateLotSelectOptions(targetBlock, prefillLot);
 
     blockSelect.onchange = () => {
       updateLotSelectOptions(blockSelect.value, 1);
@@ -952,6 +980,8 @@ document.addEventListener('DOMContentLoaded', () => {
     scrollBlocks,
     focusBlock,
     clearBlockFocus,
+    onMobileBlockSelect: (val) => focusBlock(val || null),
+    getCurrentBlock: () => state.currentBlock,
     handleTrayLotClick,
     openRegisterModal,
     openEditModal,
