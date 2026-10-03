@@ -927,18 +927,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function toggleMapMode() {
     if (!state.imgOverlay) return;
+    const btn = document.getElementById('btnToggleMapMode');
+
     if (state.mapMode === 'clean') {
+      state.mapMode = 'fases';
+      state.imgOverlay.setUrl('assets/mapa_fases.webp');
+      if (btn) btn.title = 'Mapa de Módulos e Fases ativo. Clique para ver Planta Original';
+      showToast('Visualizando: Mapa com Módulos e Fases Separados 🎨');
+    } else if (state.mapMode === 'fases') {
       state.mapMode = 'original';
       state.imgOverlay.setUrl('assets/mapa.webp');
-      const btn = document.getElementById('btnToggleMapMode');
-      if (btn) btn.title = 'Planta Original ativa. Clique para voltar ao Minimalista';
-      showToast('Visualizando: Planta Original do Livro');
+      if (btn) btn.title = 'Planta Original ativa. Clique para ver Mapa Minimalista';
+      showToast('Visualizando: Planta Original do Livro 📖');
     } else {
       state.mapMode = 'clean';
       state.imgOverlay.setUrl('assets/mapa_clean.webp');
-      const btn = document.getElementById('btnToggleMapMode');
-      if (btn) btn.title = 'Mapa Minimalista ativo. Clique para ver Planta Original';
-      showToast('Visualizando: Mapa Minimalista (Sem árvores/linhas)');
+      if (btn) btn.title = 'Mapa Minimalista ativo. Clique para ver Módulos e Fases';
+      showToast('Visualizando: Mapa Minimalista 📐');
     }
   }
 
