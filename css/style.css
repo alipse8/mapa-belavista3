@@ -1676,18 +1676,11 @@ textarea.form-control {
   }
 
   .block-focus-banner {
-    top: 116px;
-    padding: 6px 12px;
-    gap: 8px;
-    max-width: 95vw;
+    display: none !important; /* No mobile a indicação e retorno são feitos pelo menu suspenso superior */
   }
 
-  .block-focus-info strong {
-    font-size: 13px;
-  }
-
-  .banner-actions .btn-back-map {
-    display: none; /* No mobile o botão Voltar ao Mapa Geral fica no topo ao lado do menu suspenso */
+  .btn-tray-add {
+    display: none !important; /* No mobile o cadastro é feito pelo botão flutuante (+) ou tocando no lote */
   }
 
   .block-lots-tray {
