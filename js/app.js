@@ -180,12 +180,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Tooltip informativo
       const phaseBadgeHtml = (state.colorByPhase && phase)
-        ? `<div style="margin-top:2px;font-size:11px;font-weight:700;color:${phase.color}">🏷️ ${phase.name}</div>`
+        ? `<div style="margin-top:2px;font-size:11px;font-weight:700;color:${phase.color}">${phase.name}</div>`
         : '';
 
       const tooltipText = isOccupied
-        ? `<strong>Bloco ${lot.block} • Lote ${lot.lot}</strong>${phaseBadgeHtml}<br>👤 ${neighbor.name}<br>💬 Clique para ver dados`
-        : `<strong>Bloco ${lot.block} • Lote ${lot.lot}</strong>${phaseBadgeHtml}<br>Clique para cadastrar`;
+        ? `<strong>Bloco ${lot.block} • Lote ${lot.lot}</strong>${phaseBadgeHtml}<br>${neighbor.name}<br><span style="color:var(--gray-500);font-size:11px;">Clique para ver dados</span>`
+        : `<strong>Bloco ${lot.block} • Lote ${lot.lot}</strong>${phaseBadgeHtml}<br><span style="color:var(--gray-500);font-size:11px;">Clique para cadastrar</span>`;
 
       marker.bindTooltip(tooltipText, {
         className: 'custom-tooltip',
@@ -274,7 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. Menu Suspenso Mobile
     const mobileSelect = document.getElementById('mobileBlockSelect');
     if (mobileSelect) {
-      mobileSelect.innerHTML = '<option value="">🗺️ Ver Mapa Geral</option>' +
+      mobileSelect.innerHTML = '<option value="">Ver Mapa Geral</option>' +
         AVAILABLE_BLOCKS.map(bname => {
           const count = LOTS_DATA.filter(l => l.block === bname).length;
           return `<option value="${bname}">Bloco ${bname} (${count} lotes)</option>`;
@@ -519,8 +519,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const targetBlock = prefillBlock || state.currentBlock || 'A';
 
-    if (titleEl) titleEl.innerHTML = `<span>📝</span> Cadastrar Meu Terreno`;
-    if (submitBtn) submitBtn.innerHTML = `💾 Salvar e Compartilhar`;
+    if (titleEl) titleEl.textContent = 'Cadastrar Meu Terreno';
+    if (submitBtn) submitBtn.textContent = 'Salvar e Compartilhar';
 
     // Popula blocos
     blockSelect.innerHTML = AVAILABLE_BLOCKS.map(b => `<option value="${b}">Bloco ${b}</option>`).join('');
@@ -556,8 +556,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const phoneInput = document.getElementById('regPhone');
     const messageInput = document.getElementById('regMessage');
 
-    if (titleEl) titleEl.innerHTML = `<span>✏️</span> Editar Dados do Lote`;
-    if (submitBtn) submitBtn.innerHTML = `💾 Atualizar Dados`;
+    if (titleEl) titleEl.textContent = 'Editar Dados do Lote';
+    if (submitBtn) submitBtn.textContent = 'Atualizar Dados';
 
     // Popula blocos e fixa no bloco atual
     blockSelect.innerHTML = AVAILABLE_BLOCKS.map(b => `<option value="${b}">Bloco ${b}</option>`).join('');
@@ -628,7 +628,7 @@ document.addEventListener('DOMContentLoaded', () => {
         message
       });
 
-      showToast(state.isEditing ? `Dados do Lote ${lotId} atualizados! 🎉` : `Lote ${lotId} cadastrado com sucesso! 🎉`);
+      showToast(state.isEditing ? `Dados do Lote ${lotId} atualizados!` : `Lote ${lotId} cadastrado com sucesso!`);
       closeRegisterModal();
       focusLotOnMap(lotId);
     } catch (err) {
@@ -636,7 +636,7 @@ document.addEventListener('DOMContentLoaded', () => {
       alert('Erro ao salvar lote. Verifique sua conexão.');
     } finally {
       submitBtn.disabled = false;
-      submitBtn.innerText = state.isEditing ? '💾 Atualizar Dados' : '💾 Salvar e Compartilhar';
+      submitBtn.innerText = state.isEditing ? 'Atualizar Dados' : 'Salvar e Compartilhar';
     }
   }
 
@@ -737,7 +737,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!filtered.length) {
       container.innerHTML = `
         <div style="text-align: center; padding: 30px; color: var(--gray-500);">
-          <p style="font-size: 24px; margin-bottom: 8px;">🔍</p>
+          <div style="margin-bottom: 10px; color: var(--gray-400);">
+            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          </div>
           <p>Nenhum vizinho encontrado com esse termo.</p>
         </div>
       `;
@@ -755,8 +757,8 @@ document.addEventListener('DOMContentLoaded', () => {
         ? `<span class="neighbor-status-badge" style="font-size: 10px; background: #ffedd5; color: #c2410c;">Pré-cadastro</span>`
         : `<span class="neighbor-status-badge" style="font-size: 10px; background: #dcfce7; color: #15803d;">Confirmado</span>`;
       const whatsappBtnHtml = hasPhone ? `
-        <a class="btn-whatsapp" style="height: 34px; width: 34px; padding: 0; border-radius: var(--radius-sm);" href="https://wa.me/55${cleanPhone}?text=${encodeURIComponent(`Olá ${n.name}! Sou seu vizinho no Residencial Pacaembu!`)}" target="_blank" title="Chamar no WhatsApp">
-          💬
+        <a class="btn-whatsapp" style="height: 34px; width: 34px; padding: 0; border-radius: var(--radius-sm); display: inline-flex; align-items: center; justify-content: center;" href="https://wa.me/55${cleanPhone}?text=${encodeURIComponent(`Olá ${n.name}! Sou seu vizinho no Residencial Pacaembu!`)}" target="_blank" title="Chamar no WhatsApp">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.664-.698c.97.589 1.905.92 2.796.92 3.182 0 5.768-2.587 5.769-5.766.001-3.182-2.585-5.77-5.769-5.77zm3.364 8.232c-.14.394-.711.728-1.026.776-.307.047-.704.077-2.115-.494-1.805-.729-2.956-2.553-3.046-2.673-.09-.12-1.02-1.356-1.02-2.586 0-1.23.645-1.838.874-2.088.229-.25.5-.312.667-.312.167 0 .334.002.479.01.152.008.356-.057.556.425.208.501.71 1.733.772 1.859.063.125.104.271.021.438-.083.167-.125.271-.25.417-.125.146-.263.326-.376.438-.125.125-.255.26-.11.51.146.25.648 1.069 1.391 1.731.956.852 1.763 1.116 2.013 1.241.25.125.396.104.542-.063.146-.167.625-.73.792-.98.167-.25.334-.208.563-.125.229.083 1.458.688 1.708.813.25.125.417.188.479.292.063.104.063.604-.077.998zM12 2C6.477 2 2 6.477 2 12c0 1.891.524 3.662 1.435 5.176L2 22l4.957-1.399C8.423 21.493 10.155 22 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/></svg>
         </a>
       ` : '';
 
@@ -767,7 +769,7 @@ document.addEventListener('DOMContentLoaded', () => {
               ${n.name}
               ${statusBadge}
             </h5>
-            <p>📍 Bloco ${n.block} • Lote ${n.lot} ${n.message ? '• "' + n.message + '"' : ''}</p>
+            <p>Bloco ${n.block} • Lote ${n.lot} ${n.message ? '• "' + n.message + '"' : ''}</p>
           </div>
           <div style="display: flex; gap: 6px; align-items: center;">
             <button class="btn-secondary" style="height: 34px; padding: 0 10px; font-size: 12px;" onclick="window.app.locateAndShow('${n.id}')">
@@ -819,7 +821,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="search-item" onclick="window.app.selectSearchItem('${l.id}')">
               <div>
                 <div class="search-item-title">Bloco ${l.block} • Lote ${l.lot}</div>
-                <div class="search-item-sub">${isOcc ? '👤 ' + neighbor.name : 'Terreno disponível'}</div>
+                <div class="search-item-sub">${isOcc ? neighbor.name : 'Terreno disponível'}</div>
               </div>
               <span class="search-item-badge ${isOcc ? 'occupied' : ''}">
                 ${isOcc ? 'Cadastrado' : 'Disponível'}
@@ -964,7 +966,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 10. COMPARTILHAMENTO & TOASTS
   // =========================================================================
   function shareMap() {
-    const text = '🏠 Encontre seus vizinhos no Mapa Interativo do Residencial Bela Vista III (Pacaembu)! Cadastre seu lote: ' + window.location.href;
+    const text = 'Encontre seus vizinhos no Mapa Interativo do Residencial Bela Vista III (Pacaembu)! Cadastre seu lote: ' + window.location.href;
     if (navigator.share) {
       navigator.share({
         title: 'Mapa dos Vizinhos - Residencial Pacaembu',
@@ -973,7 +975,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }).catch(() => {});
     } else {
       navigator.clipboard.writeText(text).then(() => {
-        showToast('Link copiado para a área de transferência! 📋');
+        showToast('Link copiado para a área de transferência!');
       });
     }
   }
@@ -984,7 +986,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const toast = document.createElement('div');
     toast.className = 'toast';
-    toast.innerHTML = `<span>🔔</span> <span>${message}</span>`;
+    toast.innerHTML = `
+      <span style="display:flex;align-items:center;opacity:0.9;">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h24s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+      </span>
+      <span>${message}</span>
+    `;
     container.appendChild(toast);
 
     setTimeout(() => {
@@ -1040,19 +1047,19 @@ document.addEventListener('DOMContentLoaded', () => {
       state.imgOverlay.setUrl('assets/mapa_fases.webp');
       if (btn) btn.title = 'Mapa de Módulos e Fases ativo. Clique para ver Planta Original';
       togglePhaseColoring(true);
-      showToast('Visualizando: Mapa com Módulos e Fases Separados 🎨');
+      showToast('Visualizando: Mapa com Módulos e Fases Separados');
     } else if (state.mapMode === 'fases') {
       state.mapMode = 'original';
       state.imgOverlay.setUrl('assets/mapa.webp');
       if (btn) btn.title = 'Planta Original ativa. Clique para ver Mapa Minimalista';
       togglePhaseColoring(false);
-      showToast('Visualizando: Planta Original do Livro 📖');
+      showToast('Visualizando: Planta Original do Livro');
     } else {
       state.mapMode = 'clean';
       state.imgOverlay.setUrl('assets/mapa_clean.webp');
       if (btn) btn.title = 'Mapa Minimalista ativo. Clique para ver Módulos e Fases';
       togglePhaseColoring(false);
-      showToast('Visualizando: Mapa Minimalista 📐');
+      showToast('Visualizando: Mapa Minimalista');
     }
   }
 
@@ -1084,7 +1091,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (state.colorByPhase) {
       showPhaseNavigator(true);
       if (typeof forcedState !== 'boolean') {
-        showToast('🏷️ Cores por Fase ativadas!');
+        showToast('Cores por Fase ativadas');
       }
     } else {
       state.currentPhase = null;

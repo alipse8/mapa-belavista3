@@ -264,6 +264,17 @@ html, body {
   box-shadow: 0 2px 8px rgba(14, 165, 233, 0.35);
 }
 
+.btn-icon svg,
+.brand-icon svg,
+.modal-close svg,
+.search-clear svg,
+.search-icon svg,
+.mobile-select-icon svg,
+.focus-pin-icon svg,
+.share-icon svg {
+  display: block;
+}
+
 .btn-icon .badge-dot {
   position: absolute;
   top: 6px;
