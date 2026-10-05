@@ -1,89 +1,95 @@
-# 🏡 Mapa Interativo dos Vizinhos • Residencial Bela Vista III (Pacaembu)
+# Mapa Interativo dos Vizinhos - Residencial Bela Vista III (Pacaembu)
 
-Um mapa interativo completo e responsivo (otimizado para celular e computador) desenvolvido a partir da planta oficial de implantação (Página 21 do Book do Corretor), cobrindo **todas as 21 quadras (Blocos A a U)** e **988 lotes residenciais**.
+Criado por Jean da Silva Pedroso.
 
-Hospedado no **Firebase Hosting** com banco de dados em tempo real no **Firebase Realtime Database** (`belavista3-vizinhos-default-rtdb`).
+Mapa interativo web, responsivo para desktop e dispositivos móveis, desenvolvido a partir da planta oficial de implantação do Residencial Bela Vista III (Assis - SP). A aplicação cobre todas as 21 quadras (Blocos A a U) e os 988 lotes do empreendimento.
 
----
+Hospedagem em produção via Firebase Hosting com sincronização em tempo real via Firebase Realtime Database.
 
-## 🌟 Principais Recursos
-
-- 🗺️ **Planta Oficial de Alta Resolução**: Imagem nítida em formato WebP otimizado (1.5 MB), com navegação suave por toque (*pinch-to-zoom*) no celular ou roda do mouse no desktop.
-- 🎯 **Navegação Rápida por Quadras (A a U)**: Barra de atalhos no topo para dar zoom instantâneo em qualquer bloco.
-- 🔍 **Busca Inteligente**: Encontre rapidamente qualquer lote (ex: `B-14`, `Quadra H`) ou busque vizinhos pelo nome (ex: `Jean`, `Carlos`).
-- 📝 **Cadastro Simples de Morador**:
-  - Seleção da Quadra e Lote
-  - Nome completo ou da família
-  - Telefone / WhatsApp com máscara automática
-  - Situação da obra: *Em obras 🏗️*, *Em projeto 📐*, *Terreno quitado 🔑*, *Já morando 🏡*, *Investimento 📈*
-  - Recado / Mensagem pública para a vizinhança
-- 💬 **Botão Direto para o WhatsApp**: Clique no lote de um vizinho e abra a conversa no WhatsApp já com mensagem personalizada de apresentação.
-- 👥 **Diretório Geral de Moradores**: Lista completa e pesquisável de todos os vizinhos cadastrados com botão de contato e "Ver no Mapa".
-- 📊 **Painel de Estatísticas**: Percentual de vizinhos encontrados e ranking de quadras mais ativas.
-- ☁️ **Sincronização em Tempo Real (Firebase)**: Quando qualquer morador cadastra um lote, ele aparece instantaneamente para todos os vizinhos conectados!
-- 📥 **Exportação Excel / CSV**: Baixe a lista de contatos em planilha a qualquer momento.
+- Link de acesso: https://belavista3-vizinhos.web.app
 
 ---
 
-## 🚀 Como Publicar no Firebase Hosting
+## Funcionalidades
 
-O projeto já está 100% configurado para o seu projeto `belavista3-vizinhos`.
-
-### Passo 1: Fazer login no Firebase (caso ainda não tenha feito)
-No terminal PowerShell nesta pasta, execute:
-```powershell
-npx firebase login
-```
-*(Ele abrirá seu navegador para você confirmar sua conta Google)*
-
-### Passo 2: Fazer o Deploy do Site
-Execute o comando:
-```powershell
-npx firebase deploy --only hosting
-```
-
-Pronto! Seu mapa interativo estará publicado e acessível publicamente nos endereços:
-- 🌐 `https://belavista3-vizinhos.web.app`
-- 🌐 `https://belavista3-vizinhos.firebaseapp.com`
-
----
-
-## 🔒 Regras de Leitura e Gravação do Banco (Realtime Database)
-
-Para que os vizinhos consigam cadastrar seus lotes sem erro de permissão:
-
-1. Acesse o [Console do Firebase](https://console.firebase.google.com/) > Seu projeto `belavista3-vizinhos`.
-2. No menu lateral esquerdo, clique em **Realtime Database**.
-3. Clique na aba **Regras** (Rules) no topo.
-4. Garanta que as regras estejam assim:
-```json
-{
-  "rules": {
-    ".read": true,
-    ".write": true
-  }
-}
-```
-5. Clique em **Publicar** (Publish).
+- **Multi-Mapas em Alta Resolução**:
+  - Mapa Minimalista: versão vetorizada e limpa com foco nos lotes e numerações.
+  - Mapa de Módulos e Fases: divisão visual das 5 zonas oficiais (Fase 1 - Módulos 1, 2 e 3; Fase 2 - Módulos 1 e 2).
+  - Planta Original: imagem do projeto executivo do livro de implantação.
+- **Navegação por Quadras**:
+  - Desktop: carrossel horizontal de blocos com seleção rápida e alternância para o mapa geral.
+  - Mobile: menu suspenso integrado com botão direto de retorno ao mapa geral.
+- **Busca Rápida**:
+  - Localização instantânea por código de lote (ex: `B-14`, `H-02`) ou busca por nome de morador.
+- **Cadastro e Identificação de Moradores**:
+  - Seleção de quadra e lote.
+  - Nome completo ou familiar.
+  - Telefone / WhatsApp com formatação automática.
+  - Situação do lote (Comprador, Pré-cadastro, Construindo, etc.).
+  - Mensagem pública para a vizinhança.
+- **Integração com WhatsApp**:
+  - Início de conversa direto pelo card do lote, com mensagem inicial contextualizada.
+- **Diretório Geral e Estatísticas**:
+  - Listagem completa e pesquisável de todos os vizinhos cadastrados.
+  - Painel de progresso com contagem de confirmados, pré-cadastros e ranking por bloco.
+- **Sincronização em Tempo Real**:
+  - Atualizações instantâneas no mapa para todos os usuários conectados via Firebase Realtime Database.
+- **Exportação de Dados**:
+  - Backup e download da lista de contatos em formato CSV.
 
 ---
 
-## 📁 Estrutura de Arquivos
+## Estrutura do Projeto
 
 ```text
 Pacaembu/
-├── index.html               # Página principal do mapa interativo
-├── firebase.json            # Configuração do Firebase Hosting e Database
-├── .firebaserc              # Aponta para o projeto belavista3-vizinhos
-├── database.rules.json      # Regras de acesso público do banco de dados
+├── index.html               # Estrutura HTML da aplicação e modais
+├── firebase.json            # Configurações do Firebase Hosting e Database
+├── .firebaserc              # Associação com o projeto belavista3-vizinhos
+├── database.rules.json      # Regras de segurança e validação do Realtime Database
+├── deploy.ps1               # Script PowerShell para deploy automatizado
 ├── css/
-│   └── style.css            # Estilos visuais modernos, glassmorphism e mobile-first
+│   └── style.css            # Estilos da aplicação, responsividade e layout
 ├── js/
-│   ├── lots-data.js         # Base de dados matemática dos 988 lotes (Blocos A a U)
-│   ├── storage.js           # Gerenciador com Firebase Realtime Database pré-configurado
-│   └── app.js               # Lógica do Leaflet, filtros, busca, modais e WhatsApp
-├── assets/
-│   ├── mapa.webp            # Imagem oficial de implantação otimizada para web (1.5 MB)
-│   └── mapa.jpg             # Imagem de fallback JPG
-└── README.md                # Este guia explicativo
+│   ├── app.js               # Lógica Leaflet, eventos de interface, busca e modais
+│   ├── block-capsules.js    # Coordenadas poligonais das cápsulas de cada bloco
+│   ├── default-neighbors.js # Dados padrão de moradores para carga inicial
+│   ├── lots-data.js         # Mapeamento de coordenadas dos 988 lotes (A a U)
+│   └── storage.js           # Camada de persistência (Firebase, Sheets, LocalStorage)
+└── assets/
+    ├── mapa_clean.webp      # Mapa minimalista otimizado
+    ├── mapa_clean.svg       # Vetor do mapa minimalista
+    ├── mapa_fases.webp      # Mapa oficial com divisão de módulos e fases
+    ├── mapa_fases.svg       # Vetor do mapa de fases
+    └── mapa.webp            # Planta original em alta resolução
 ```
+
+---
+
+## Segurança do Banco de Dados
+
+O banco de dados utiliza regras estritas de segurança em `database.rules.json`:
+
+- Acesso à raiz (`/`) bloqueado para leitura e escrita direta.
+- Leitura pública permitida exclusivamente no nó `/vizinhos`.
+- Gravação restrita a lotes individuais (`/vizinhos/$lotId`) com validação de esquema:
+  - Campos obrigatórios: `id`, `block`, `lot`, `name`.
+  - Validação de tipos (bloco em letra única, lote numérico entre 1 e 100).
+  - Limite de caracteres em todos os campos de texto para evitar abusos.
+  - Bloqueio de campos não previstos no esquema.
+
+---
+
+## Publicação e Deploy
+
+Para publicar novas versões no Firebase Hosting e atualizar as regras do banco de dados:
+
+1. Executar o script automatizado:
+   ```powershell
+   .\deploy.ps1
+   ```
+
+2. Ou manualmente via Firebase CLI:
+   ```powershell
+   npx firebase deploy --only hosting,database
+   ```
