@@ -5,8 +5,8 @@ Write-Host "   Projeto: belavista3-vizinhos          " -ForegroundColor Cyan
 Write-Host "=========================================" -ForegroundColor Cyan
 Write-Host ""
 
-# Executa o deploy da pasta no Firebase Hosting
-npx --yes -p firebase-tools firebase deploy --only hosting
+# Executa o deploy do site e das regras de segurança do banco
+npx --yes -p firebase-tools firebase deploy --only hosting,database
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""

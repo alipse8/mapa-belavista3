@@ -1,6 +1,44 @@
 {
   "rules": {
-    ".read": true,
-    ".write": true
+    ".read": false,
+    ".write": false,
+    "vizinhos": {
+      ".read": true,
+      ".indexOn": ["block", "lot"],
+      "$lotId": {
+        ".write": true,
+        ".validate": "newData.exists() ? (newData.hasChildren(['id', 'block', 'lot', 'name']) && newData.child('id').val() === $lotId && newData.child('block').isString() && newData.child('block').val().length === 1 && newData.child('lot').isNumber() && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 100) : true",
+        "id": {
+          ".validate": "newData.isString() && newData.val() === $lotId"
+        },
+        "block": {
+          ".validate": "newData.isString() && newData.val().length === 1"
+        },
+        "lot": {
+          ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 100"
+        },
+        "name": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 100"
+        },
+        "phone": {
+          ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 25)"
+        },
+        "phoneFormatted": {
+          ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 30)"
+        },
+        "status": {
+          ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 50)"
+        },
+        "message": {
+          ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 500)"
+        },
+        "registeredAt": {
+          ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 40)"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    }
   }
 }
