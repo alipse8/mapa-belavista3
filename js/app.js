@@ -21,6 +21,33 @@ document.addEventListener('DOMContentLoaded', () => {
     editingLotId: null,
     mapMode: 'clean', // 'clean', 'fases' ou 'original'
     imgOverlay: null,
+    blurOverlay: null,
+    streetLabels: [],
+  };
+
+  // Mapeamento das ruas que conectam cada quadra (extraído de mapa_clean.svg)
+  const BLOCK_STREETS = {
+    U: { top: 'RUA "H"', bottom: 'RUA "G"', left: 'RUA "L"', right: 'RUA "K"' },
+    N: { top: 'RUA "H"', bottom: 'RUA "G"', left: 'RUA "K"', right: 'RUA "J"' },
+    G: { top: 'RUA "H"', bottom: 'RUA "G"', left: 'RUA "J"', right: 'AV. ALBANO ANTONIEL' },
+    T: { top: 'RUA "G"', bottom: 'RUA "F"', left: 'RUA "L"', right: 'RUA "K"' },
+    M: { top: 'RUA "G"', bottom: 'RUA "F"', left: 'RUA "K"', right: 'RUA "J"' },
+    F: { top: 'RUA "G"', bottom: 'RUA "F"', left: 'RUA "J"', right: 'AV. ALBANO ANTONIEL' },
+    S: { top: 'RUA "F"', bottom: 'RUA "E"', left: 'RUA "L"', right: 'RUA "K"' },
+    L: { top: 'RUA "F"', bottom: 'RUA "E"', left: 'RUA "K"', right: 'RUA "J"' },
+    E: { top: 'RUA "F"', bottom: 'RUA "E"', left: 'RUA "J"', right: 'AV. ALBANO ANTONIEL' },
+    R: { top: 'RUA "E"', bottom: 'RUA "D"', left: 'RUA "L"', right: 'RUA "K"' },
+    K: { top: 'RUA "E"', bottom: 'RUA "D"', left: 'RUA "K"', right: 'RUA "J"' },
+    D: { top: 'RUA "E"', bottom: 'RUA "D"', left: 'RUA "J"', right: 'AV. ALBANO ANTONIEL' },
+    Q: { top: 'RUA "D"', bottom: 'RUA "C"', left: 'RUA "L"', right: 'RUA "K"' },
+    J: { top: 'RUA "D"', bottom: 'RUA "C"', left: 'RUA "K"', right: 'RUA "J"' },
+    C: { top: 'RUA "D"', bottom: 'RUA "C"', left: 'RUA "J"', right: 'RUA "I"' },
+    P: { top: 'RUA "C"', bottom: 'RUA "B"', left: 'RUA "L"', right: 'RUA "K"' },
+    I: { top: 'RUA "C"', bottom: 'RUA "B"', left: 'RUA "K"', right: 'RUA "J"' },
+    B: { top: 'RUA "C"', bottom: 'RUA "B"', left: 'RUA "J"', right: 'RUA "I"' },
+    O: { top: 'RUA "B"', bottom: 'RUA "M"', left: 'RUA "L"', right: 'RUA "K"' },
+    H: { top: 'RUA "B"', bottom: 'RUA "M"', left: 'RUA "K"', right: 'RUA "J"' },
+    A: { top: 'RUA "B"', bottom: 'RUA "A"', left: 'RUA "J"', right: 'RUA "I"' }
   };
 
   const AVAILABLE_BLOCKS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U'];
@@ -99,9 +126,17 @@ document.addEventListener('DOMContentLoaded', () => {
       alt: 'Mapa Minimalista Pacaembu'
     }).addTo(state.map);
 
+    // Camada borrada (sobreposta ao redor do bloco focado deixando bloco + nome da rua visíveis)
+    state.blurOverlay = L.imageOverlay('assets/mapa_clean.webp', bounds, {
+      alt: 'Camada Desfocada',
+      className: 'map-blur-overlay',
+      interactive: false
+    });
+
     // Fallback caso mapa_clean não esteja disponível
     state.imgOverlay.on('error', () => {
       state.imgOverlay.setUrl('assets/mapa.webp');
+      if (state.blurOverlay) state.blurOverlay.setUrl('assets/mapa.webp');
     });
 
     // Ajusta visão inicial para ver todo o loteamento
@@ -123,18 +158,258 @@ document.addEventListener('DOMContentLoaded', () => {
     return [MAP_DIMENSIONS.height - y, x];
   }
 
+  function getBlockBasePoints(blockName) {
+    if (typeof BLOCK_CAPSULES !== 'undefined' && BLOCK_CAPSULES[blockName]) {
+      return BLOCK_CAPSULES[blockName];
+    }
+    const meta = BLOCKS_METADATA[blockName];
+    if (!meta) return null;
+    return [
+      [meta.x1, meta.y1],
+      [meta.x2, meta.y1],
+      [meta.x2, meta.y2],
+      [meta.x1, meta.y2]
+    ];
+  }
+
+  // Expande os vértices do bloco para fora ao longo das normais das arestas para revelar as ruas e seus nomes
+  function getExpandedCapsulePoints(blockName, pad = 62) {
+    const pts = getBlockBasePoints(blockName);
+    if (!pts || pts.length < 3) return null;
+
+    const n = pts.length;
+    let signedArea = 0;
+    for (let i = 0; i < n; i++) {
+      const [x1, y1] = pts[i];
+      const [x2, y2] = pts[(i + 1) % n];
+      signedArea += (x1 * y2 - x2 * y1);
+    }
+    const sign = signedArea >= 0 ? 1 : -1;
+
+    const edgeNormal = (p1, p2) => {
+      const dx = p2[0] - p1[0];
+      const dy = p2[1] - p1[1];
+      const len = Math.hypot(dx, dy) || 1;
+      return [(sign * dy) / len, (-sign * dx) / len];
+    };
+
+    return pts.map((curr, i) => {
+      const prev = pts[(i - 1 + n) % n];
+      const next = pts[(i + 1) % n];
+      const [nx1, ny1] = edgeNormal(prev, curr);
+      const [nx2, ny2] = edgeNormal(curr, next);
+
+      let ax = nx1 + nx2;
+      let ay = ny1 + ny2;
+      const al = Math.hypot(ax, ay);
+      if (al < 1e-6) {
+        ax = nx1;
+        ay = ny1;
+      } else {
+        ax /= al;
+        ay /= al;
+      }
+
+      const dot = Math.max(0.5, ax * nx1 + ay * ny1);
+      const scale = Math.min(1.5 * pad, pad / dot);
+
+      const ex = Math.max(0, Math.min(MAP_DIMENSIONS.width, curr[0] + ax * scale));
+      const ey = Math.max(0, Math.min(MAP_DIMENSIONS.height, curr[1] + ay * scale));
+      return [ex, ey];
+    });
+  }
+
+  function ensureBlurClipPath() {
+    let pathEl = document.getElementById('streetBlurClipPath');
+    if (pathEl) return pathEl;
+
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('width', '0');
+    svg.setAttribute('height', '0');
+    svg.style.position = 'absolute';
+    svg.style.pointerEvents = 'none';
+
+    const defs = document.createElementNS(svgNS, 'defs');
+    const clip = document.createElementNS(svgNS, 'clipPath');
+    clip.setAttribute('id', 'streetBlurClip');
+    clip.setAttribute('clipPathUnits', 'objectBoundingBox');
+
+    pathEl = document.createElementNS(svgNS, 'path');
+    pathEl.setAttribute('id', 'streetBlurClipPath');
+    pathEl.setAttribute('clip-rule', 'evenodd');
+
+    clip.appendChild(pathEl);
+    defs.appendChild(clip);
+    svg.appendChild(defs);
+    document.body.appendChild(svg);
+    return pathEl;
+  }
+
+  // Recorta um polígono pelo semiplano x <= boundX (keepLess = true) ou x >= boundX (keepLess = false)
+  function clipPolygonByX(pts, boundX, keepLess) {
+    if (!pts || pts.length < 3) return [];
+    const inside = (p) => (keepLess ? p[0] <= boundX : p[0] >= boundX);
+    const intersect = (a, b) => {
+      const dx = b[0] - a[0];
+      const t = Math.abs(dx) < 1e-6 ? 0 : (boundX - a[0]) / dx;
+      return [boundX, a[1] + t * (b[1] - a[1])];
+    };
+
+    const output = [];
+    for (let i = 0; i < pts.length; i++) {
+      const curr = pts[i];
+      const prev = pts[(i - 1 + pts.length) % pts.length];
+      const currIn = inside(curr);
+      const prevIn = inside(prev);
+
+      if (currIn) {
+        if (!prevIn) output.push(intersect(prev, curr));
+        output.push(curr);
+      } else if (prevIn) {
+        output.push(intersect(prev, curr));
+      }
+    }
+    return output;
+  }
+
+  function clipPolygonByXRange(pts, minX, maxX) {
+    const step1 = clipPolygonByX(pts, minX, false);
+    return clipPolygonByX(step1, maxX, true);
+  }
+
+  function isNearbyLot(lot, selectedLot) {
+    if (!lot || !selectedLot) return false;
+    return lot.block === selectedLot.block && Math.abs(lot.x - selectedLot.x) <= 55;
+  }
+
+  function clearStreetLabels() {
+    if (state.streetLabels && state.streetLabels.length && state.map) {
+      state.streetLabels.forEach(m => state.map.removeLayer(m));
+    }
+    state.streetLabels = [];
+  }
+
+  function addStreetLabel(x, y, text) {
+    if (!text || !state.map) return;
+    const icon = L.divIcon({
+      className: 'street-focus-label-wrap',
+      html: `<div class="street-focus-label">${text}</div>`,
+      iconSize: [0, 0],
+      iconAnchor: [0, 0]
+    });
+    const marker = L.marker(pixelToLatLng(x, y), {
+      icon,
+      interactive: false,
+      zIndexOffset: 400
+    }).addTo(state.map);
+    state.streetLabels.push(marker);
+  }
+
+  // Aplica desfoque no mapa deixando apenas as ruas que conectam e os vizinhos próximos visíveis
+  function applyStreetBlur(blockName, selectedLot = null) {
+    if (state.activeBlockMask) {
+      state.map.removeLayer(state.activeBlockMask);
+      state.activeBlockMask = null;
+    }
+    clearStreetLabels();
+
+    if (!blockName) {
+      if (state.blurOverlay && state.map && state.map.hasLayer(state.blurOverlay)) {
+        const el = state.blurOverlay.getElement();
+        if (el) el.style.clipPath = '';
+        state.map.removeLayer(state.blurOverlay);
+      }
+      return;
+    }
+
+    const expandedPts = getExpandedCapsulePoints(blockName, 62);
+    if (!expandedPts || !expandedPts.length) return;
+
+    const toSubpath = (polyPts) => {
+      if (!polyPts || polyPts.length < 3) return '';
+      return 'M ' + polyPts.map(([x, y]) =>
+        `${(x / MAP_DIMENSIONS.width).toFixed(5)} ${(y / MAP_DIMENSIONS.height).toFixed(5)}`
+      ).join(' L ') + ' Z';
+    };
+
+    const subpaths = ['M 0 0 L 1 0 L 1 1 L 0 1 Z', toSubpath(expandedPts)];
+    const meta = typeof BLOCKS_METADATA !== 'undefined' ? BLOCKS_METADATA[blockName] : null;
+    let outlinePts = expandedPts;
+
+    if (selectedLot && meta) {
+      const innerBlockPts = getExpandedCapsulePoints(blockName, 3);
+      const nx1 = Math.max(meta.x1, selectedLot.x - 58.5);
+      const nx2 = Math.min(meta.x2, selectedLot.x + 58.5);
+
+      if (innerBlockPts && innerBlockPts.length >= 3) {
+        if (nx1 > meta.x1 + 5) {
+          const leftBlur = clipPolygonByX(innerBlockPts, nx1, true);
+          if (leftBlur.length >= 3) subpaths.push(toSubpath(leftBlur));
+        }
+        if (nx2 < meta.x2 - 5) {
+          const rightBlur = clipPolygonByX(innerBlockPts, nx2, false);
+          if (rightBlur.length >= 3) subpaths.push(toSubpath(rightBlur));
+        }
+        const sharpSlice = clipPolygonByXRange(innerBlockPts, nx1, nx2);
+        if (sharpSlice.length >= 3) {
+          outlinePts = sharpSlice;
+        }
+      }
+
+      // Exibe o nome das ruas logo acima e abaixo da vizinhança imediata
+      const streets = BLOCK_STREETS[blockName];
+      if (streets) {
+        const centerX = Math.max(meta.x1 + 20, Math.min(meta.x2 - 20, selectedLot.x));
+        addStreetLabel(centerX, meta.y1 - 32, streets.top);
+        addStreetLabel(centerX, meta.y2 + 32, streets.bottom);
+        if (selectedLot.x - meta.x1 < 180 && streets.left) {
+          addStreetLabel(meta.x1 - 36, (meta.y1 + meta.y2) / 2, streets.left);
+        }
+        if (meta.x2 - selectedLot.x < 180 && streets.right) {
+          addStreetLabel(meta.x2 + 36, (meta.y1 + meta.y2) / 2, streets.right);
+        }
+      }
+    }
+
+    if (state.blurOverlay) {
+      if (!state.map.hasLayer(state.blurOverlay)) {
+        state.blurOverlay.addTo(state.map);
+      }
+      state.blurOverlay.bringToFront();
+
+      const clipPathEl = ensureBlurClipPath();
+      clipPathEl.setAttribute('d', subpaths.join(' '));
+
+      const el = state.blurOverlay.getElement();
+      if (el) {
+        el.style.clipPath = 'none';
+        el.offsetHeight;
+        el.style.clipPath = 'url(#streetBlurClip)';
+      }
+    }
+
+    const innerRing = outlinePts.map(([x, y]) => pixelToLatLng(x, y));
+    state.activeBlockMask = L.polygon(innerRing, {
+      className: 'block-street-outline',
+      color: 'rgba(2, 132, 199, 0.45)',
+      weight: 2,
+      fill: false,
+      interactive: false
+    }).addTo(state.map);
+  }
+
   // =========================================================================
   // 2. RENDERIZAÇÃO DOS MARCADORES DE LOTES
   // =========================================================================
-  // Helper para identificar se o lote é pré-cadastro (lista preliminar) ou confirmado/atualizado
-  function isPreCadastro(neighbor) {
-    if (!neighbor) return false;
-    if (neighbor.isPreCadastro === false) return false;
-    if (neighbor.isPreCadastro === true) return true;
-    const cleanPhone = (neighbor.phone || '').replace(/\D/g, '');
-    if (cleanPhone.length >= 8) return false;
-    if (neighbor.registeredAt && neighbor.registeredAt !== '2026-09-30T18:00:00.000Z') return false;
-    return true;
+  function shouldShowLotMarker(lot, isOccupied) {
+    if (state.selectedLot) {
+      return isOccupied && isNearbyLot(lot, state.selectedLot);
+    }
+    if (state.currentBlock) {
+      return state.currentBlock === lot.block;
+    }
+    return isOccupied;
   }
 
   function renderAllLots() {
@@ -148,16 +423,23 @@ document.addEventListener('DOMContentLoaded', () => {
       const latlng = pixelToLatLng(lot.x, lot.y);
       const neighbor = neighbors[lot.id];
       const isOccupied = !!neighbor;
-      const isPre = isOccupied && isPreCadastro(neighbor);
 
       let iconHtml = '';
+      let isSelected = false;
       if (isOccupied) {
         const initial = (neighbor.name || 'V')[0].toUpperCase();
-        const badgeClass = isPre ? 'lot-pin-occupied pre-cadastro' : 'lot-pin-occupied confirmed';
-        const statusTitle = isPre ? 'Pré-cadastro' : 'Confirmado';
-        iconHtml = `<div class="${badgeClass}" title="${neighbor.name} (${statusTitle})">${initial}</div>`;
+        isSelected = !!(state.selectedLot && state.selectedLot.id === lot.id);
+        let badgeClass;
+        if (isSelected) {
+          badgeClass = 'lot-pin-occupied selected-house';
+        } else if (state.selectedLot) {
+          badgeClass = 'lot-pin-occupied neighbor-blue';
+        } else {
+          badgeClass = 'lot-pin-occupied confirmed';
+        }
+        iconHtml = `<div class="${badgeClass}">${initial}</div>`;
       } else {
-        iconHtml = `<div class="lot-pin-empty" title="Lote ${lot.lot}"></div>`;
+        iconHtml = `<div class="lot-pin-empty"></div>`;
       }
 
       const customIcon = L.divIcon({
@@ -167,17 +449,9 @@ document.addEventListener('DOMContentLoaded', () => {
         iconAnchor: isOccupied ? [12, 12] : [14, 14]
       });
 
-      const marker = L.marker(latlng, { icon: customIcon });
-
-      // Tooltip informativo
-      const tooltipText = isOccupied
-        ? `<strong>Bloco ${lot.block} • Lote ${lot.lot}</strong><br>${neighbor.name}<br><span style="color:var(--gray-500);font-size:11px;">Clique para ver dados</span>`
-        : `<strong>Bloco ${lot.block} • Lote ${lot.lot}</strong><br><span style="color:var(--gray-500);font-size:11px;">Clique para cadastrar</span>`;
-
-      marker.bindTooltip(tooltipText, {
-        className: 'custom-tooltip',
-        direction: 'top',
-        offset: [0, -10]
+      const marker = L.marker(latlng, {
+        icon: customIcon,
+        zIndexOffset: isSelected ? 500 : 0
       });
 
       // Evento de clique
@@ -188,12 +462,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       state.markers[lot.id] = marker;
 
-      // REGRA DE VISIBILIDADE:
-      // Se um bloco estiver focado, mostra todos os lotes desse bloco.
-      // Se estiver no mapa geral, mostra APENAS os lotes ocupados para manter o mapa limpo e bonito!
-      const isBlockFocused = state.currentBlock && state.currentBlock === lot.block;
-      const shouldShow = isOccupied || isBlockFocused;
-      if (shouldShow) {
+      if (shouldShowLotMarker(lot, isOccupied)) {
         marker.addTo(state.map);
       }
     });
@@ -209,15 +478,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!marker) return;
 
       const isOccupied = !!state.neighbors[lot.id];
-      let shouldShow = false;
-
-      if (state.currentBlock) {
-        // Quando um bloco está em foco, mostra EXCLUSIVAMENTE os lotes deste bloco
-        shouldShow = (state.currentBlock === lot.block);
-      } else {
-        // No mapa geral, mostra apenas os lotes com vizinhos cadastrados
-        shouldShow = isOccupied;
-      }
+      const shouldShow = shouldShowLotMarker(lot, isOccupied);
 
       const isCurrentlyOnMap = state.map.hasLayer(marker);
       if (shouldShow && !isCurrentlyOnMap) {
@@ -276,7 +537,15 @@ document.addEventListener('DOMContentLoaded', () => {
     container.scrollBy({ left: 240 * direction, behavior: 'smooth' });
   }
 
-  function focusBlock(blockName, chipElement) {
+  function focusBlock(blockName, chipElement, options = {}) {
+    const switchingAway = !blockName || !options.keepSelectedLot;
+    if (switchingAway) {
+      state.selectedLot = null;
+      document.body.classList.remove('house-focus-mode');
+      const neighborModal = document.getElementById('neighborModal');
+      if (neighborModal) neighborModal.classList.remove('active');
+    }
+
     state.currentBlock = blockName;
 
     // Atualiza estado visual dos chips no Desktop
@@ -305,11 +574,8 @@ document.addEventListener('DOMContentLoaded', () => {
       btnMobileBack.style.display = blockName ? 'inline-flex' : 'none';
     }
 
-    // Remove máscara anterior de foco
-    if (state.activeBlockMask) {
-      state.map.removeLayer(state.activeBlockMask);
-      state.activeBlockMask = null;
-    }
+    // Aplica ou limpa desfoque de fundo mantendo quadra + nome da rua visíveis
+    applyStreetBlur(blockName, state.selectedLot);
 
     const tray = document.getElementById('blockLotsTray');
     const genControl = document.getElementById('mapGeneralControl');
@@ -324,97 +590,83 @@ document.addEventListener('DOMContentLoaded', () => {
         fab.style.display = 'flex';
       }
 
-      // Zoom em todo o loteamento
-      state.map.fitBounds([[0, 0], [MAP_DIMENSIONS.height, MAP_DIMENSIONS.width]], {
-        padding: [20, 20],
-        animate: true,
-        duration: 0.8
-      });
-      updateMarkersVisibility();
+      renderAllLots();
+
+      if (!options.skipFitBounds) {
+        // Zoom em todo o loteamento
+        state.map.fitBounds([[0, 0], [MAP_DIMENSIONS.height, MAP_DIMENSIONS.width]], {
+          padding: [20, 20],
+          animate: true,
+          duration: 0.8
+        });
+      }
       return;
     }
 
     const capsulePts = (typeof BLOCK_CAPSULES !== 'undefined' && BLOCK_CAPSULES[blockName]) ? BLOCK_CAPSULES[blockName] : null;
     const meta = BLOCKS_METADATA[blockName];
 
-    if (capsulePts) {
-      // Converte coordenadas da cápsula exata do bloco para LatLng
-      const innerRing = capsulePts.map(([x, y]) => pixelToLatLng(x, y));
-      const outerRing = [
-        [-5000, -5000],
-        [MAP_DIMENSIONS.height + 5000, -5000],
-        [MAP_DIMENSIONS.height + 5000, MAP_DIMENSIONS.width + 5000],
-        [-5000, MAP_DIMENSIONS.width + 5000]
-      ];
+    if (!options.skipFitBounds) {
+      if (capsulePts) {
+        const innerRing = capsulePts.map(([x, y]) => pixelToLatLng(x, y));
+        const lats = innerRing.map(p => p[0]);
+        const lngs = innerRing.map(p => p[1]);
+        const blockBounds = L.latLngBounds(
+          [Math.min(...lats), Math.min(...lngs)],
+          [Math.max(...lats), Math.max(...lngs)]
+        );
 
-      // Máscara com recorte preciso na borda da cápsula do bloco: SOMENTE O BLOCO FICA VISÍVEL!
-      state.activeBlockMask = L.polygon([outerRing, innerRing], {
-        color: '#0f172a',
-        fillColor: '#0f172a',
-        fillOpacity: 0.94,
-        weight: 2,
-        interactive: false
-      }).addTo(state.map);
-
-      const lats = innerRing.map(p => p[0]);
-      const lngs = innerRing.map(p => p[1]);
-      const blockBounds = L.latLngBounds(
-        [Math.min(...lats), Math.min(...lngs)],
-        [Math.max(...lats), Math.max(...lngs)]
-      );
-
-      const isMobile = window.innerWidth <= 768;
-      if (isMobile) {
-        // No celular (tela estreita), não force encolher o bloco inteiro em 350px.
-        // Centraliza o bloco com um nível de zoom confortável e legível:
-        const centerLat = (Math.min(...lats) + Math.max(...lats)) / 2;
-        const centerLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
-        state.map.setView([centerLat - 15, centerLng], -0.2, {
-          animate: true,
-          duration: 0.8
-        });
-      } else {
-        state.map.fitBounds(blockBounds, {
-          padding: [35, 35],
-          animate: true,
-          duration: 0.8
-        });
-      }
-    } else if (meta) {
-      const p1 = pixelToLatLng(meta.x1, meta.y1);
-      const p2 = pixelToLatLng(meta.x2, meta.y2);
-      const isMobile = window.innerWidth <= 768;
-      if (isMobile) {
-        const centerLat = (p1[0] + p2[0]) / 2;
-        const centerLng = (p1[1] + p2[1]) / 2;
-        state.map.setView([centerLat - 15, centerLng], -0.2, { animate: true, duration: 0.8 });
-      } else {
-        state.map.fitBounds(L.latLngBounds(p1, p2), { padding: [35, 35], animate: true, duration: 0.8 });
+        const isMobile = window.innerWidth <= 768;
+        if (isMobile) {
+          // No celular (tela estreita), não force encolher o bloco inteiro em 350px.
+          // Centraliza o bloco com um nível de zoom confortável e legível:
+          const centerLat = (Math.min(...lats) + Math.max(...lats)) / 2;
+          const centerLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
+          state.map.setView([centerLat - 15, centerLng], -0.2, {
+            animate: true,
+            duration: 0.8
+          });
+        } else {
+          state.map.fitBounds(blockBounds, {
+            padding: [35, 35],
+            animate: true,
+            duration: 0.8
+          });
+        }
+      } else if (meta) {
+        const p1 = pixelToLatLng(meta.x1, meta.y1);
+        const p2 = pixelToLatLng(meta.x2, meta.y2);
+        const isMobile = window.innerWidth <= 768;
+        if (isMobile) {
+          const centerLat = (p1[0] + p2[0]) / 2;
+          const centerLng = (p1[1] + p2[1]) / 2;
+          state.map.setView([centerLat - 15, centerLng], -0.2, { animate: true, duration: 0.8 });
+        } else {
+          state.map.fitBounds(L.latLngBounds(p1, p2), { padding: [35, 35], animate: true, duration: 0.8 });
+        }
       }
     }
 
-      const lotsOfBlock = LOTS_DATA.filter(l => l.block === blockName).sort((a, b) => a.lot - b.lot);
-      const occCount = lotsOfBlock.filter(l => !!state.neighbors[l.id]).length;
+    const lotsOfBlock = LOTS_DATA.filter(l => l.block === blockName).sort((a, b) => a.lot - b.lot);
 
-      // Atualiza bandeja inferior de lotes do bloco
-      if (tray) {
-        document.getElementById('trayTitle').innerText = `Lotes do Bloco ${blockName}:`;
-        const trayContainer = document.getElementById('lotsChipsContainer');
-        trayContainer.innerHTML = lotsOfBlock.map(l => {
-          const isOcc = !!state.neighbors[l.id];
-          const n = state.neighbors[l.id];
-          const isPre = isOcc && isPreCadastro(n);
-          const shortName = isOcc && n.name ? n.name.split(' ')[0] : '';
-          const chipClass = isOcc ? (isPre ? 'lot-tray-chip pre' : 'lot-tray-chip occ') : 'lot-tray-chip avail';
-          const statusText = isOcc ? (isPre ? ' (Pré-cadastro)' : ' (Confirmado)') : '';
-          return `
-            <button type="button" class="${chipClass}" onclick="window.app.handleTrayLotClick('${l.id}')" title="Lote ${l.lot} ${isOcc ? '• ' + n.name + statusText : ''}">
-              <span class="dot"></span> Lote ${String(l.lot).padStart(2, '0')} ${isOcc ? `(${shortName})` : ''}
-            </button>
-          `;
-        }).join('');
-        tray.style.display = 'block';
-      }
+    // Atualiza bandeja inferior de lotes do bloco
+    if (tray) {
+      document.getElementById('trayTitle').innerText = `Lotes do Bloco ${blockName}:`;
+      const trayContainer = document.getElementById('lotsChipsContainer');
+      trayContainer.innerHTML = lotsOfBlock.map(l => {
+        const isOcc = !!state.neighbors[l.id];
+        const n = state.neighbors[l.id];
+        const shortName = isOcc && n.name ? n.name.split(' ')[0] : '';
+        const chipClass = isOcc ? 'lot-tray-chip occ' : 'lot-tray-chip avail';
+        const statusText = isOcc ? ' (Confirmado)' : '';
+        return `
+          <button type="button" class="${chipClass}" onclick="window.app.handleTrayLotClick('${l.id}')" title="Lote ${l.lot} ${isOcc ? '• ' + n.name + statusText : ''}">
+            <span class="dot"></span> Lote ${String(l.lot).padStart(2, '0')} ${isOcc ? `(${shortName})` : ''}
+          </button>
+        `;
+      }).join('');
+      tray.style.display = 'block';
+    }
 
     if (genControl) genControl.style.display = 'none';
     if (fab) {
@@ -422,21 +674,40 @@ document.addEventListener('DOMContentLoaded', () => {
       fab.style.display = 'flex';
     }
 
-    updateMarkersVisibility();
+    if (switchingAway) {
+      renderAllLots();
+    } else {
+      updateMarkersVisibility();
+    }
   }
 
   function clearBlockFocus() {
     focusBlock(null);
   }
 
+  function selectOccupiedLot(lot, neighbor) {
+    if (!lot || !neighbor) return;
+    if (state.currentBlock && state.currentBlock !== lot.block) {
+      focusBlock(null, null, { skipFitBounds: true });
+    }
+
+    state.selectedLot = lot;
+    document.body.classList.add('house-focus-mode');
+
+    applyStreetBlur(lot.block, lot);
+    renderAllLots();
+    focusLotOnMap(lot.id);
+    showNeighborProfileModal(neighbor, lot);
+  }
+
   function handleTrayLotClick(lotId) {
     const lot = LOTS_BY_ID[lotId];
     if (!lot) return;
-    focusLotOnMap(lotId);
     const neighbor = state.neighbors[lotId];
     if (neighbor) {
-      showNeighborProfileModal(neighbor, lot);
+      selectOccupiedLot(lot, neighbor);
     } else {
+      focusLotOnMap(lotId);
       openRegisterModal(lot.block, lot.lot);
     }
   }
@@ -447,7 +718,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function handleLotClick(lot, neighbor) {
     state.selectedLot = lot;
     if (neighbor) {
-      showNeighborProfileModal(neighbor, lot);
+      selectOccupiedLot(lot, neighbor);
     } else {
       openRegisterModal(lot.block, lot.lot);
     }
@@ -457,18 +728,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const lot = LOTS_BY_ID[lotId];
     if (!lot || !state.map) return;
 
-    const latlng = pixelToLatLng(lot.x, lot.y);
+    const meta = typeof BLOCKS_METADATA !== 'undefined' ? BLOCKS_METADATA[lot.block] : null;
     const isMobile = window.innerWidth <= 768;
-    const currentZoom = state.map.getZoom();
-    const targetZoom = isMobile ? (currentZoom >= 0 ? currentZoom : 0) : 1;
+    const blockCenterY = meta ? (meta.y1 + meta.y2) / 2 : lot.y;
+    const targetY = isMobile ? Math.max(0, blockCenterY - 110) : blockCenterY;
+    const targetX = isMobile ? lot.x : Math.max(0, lot.x - 75);
+    const latlng = pixelToLatLng(targetX, targetY);
+    const targetZoom = isMobile ? 0.35 : 0.8;
+
     state.map.setView(latlng, targetZoom, { animate: true, duration: 0.6 });
 
     const marker = state.markers[lotId];
-    if (marker) {
-      if (!state.map.hasLayer(marker)) {
-        marker.addTo(state.map);
-      }
-      marker.openTooltip();
+    if (marker && !state.map.hasLayer(marker)) {
+      marker.addTo(state.map);
     }
   }
 
@@ -623,14 +895,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const editBtn = document.getElementById('btnEditLot');
     const deleteBtn = document.getElementById('btnDeleteLot');
 
-    const isPre = isPreCadastro(neighbor);
     const initial = (neighbor.name || 'V')[0].toUpperCase();
     avatar.innerText = initial;
-    if (isPre) {
-      avatar.style.background = 'linear-gradient(135deg, #f97316, #ea580c)';
-    } else {
-      avatar.style.background = 'linear-gradient(135deg, #10b981, #059669)';
-    }
+    avatar.style.background = 'linear-gradient(135deg, #10b981, #059669)';
     nameEl.innerText = neighbor.name;
     const phase = getPhaseForBlock(neighbor.block);
     const phaseText = phase ? ` • ${phase.name}` : '';
@@ -669,7 +936,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (confirm(`Deseja realmente remover o cadastro de ${neighbor.name} no Lote ${neighbor.id}?`)) {
         await window.storage.deleteLot(neighbor.id);
         showToast('Lote desocupado com sucesso.');
-        modal.classList.remove('active');
+        closeNeighborModal();
       }
     };
 
@@ -678,6 +945,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function closeNeighborModal() {
     document.getElementById('neighborModal').classList.remove('active');
+    document.body.classList.remove('house-focus-mode');
+    if (state.selectedLot) {
+      state.selectedLot = null;
+      applyStreetBlur(state.currentBlock || null, null);
+      renderAllLots();
+    }
   }
 
   // =========================================================================
@@ -722,12 +995,9 @@ document.addEventListener('DOMContentLoaded', () => {
     filtered.sort((a, b) => a.block.localeCompare(b.block) || a.lot - b.lot);
 
     container.innerHTML = filtered.map(n => {
-      const isPre = isPreCadastro(n);
       const cleanPhone = n.phone ? n.phone.replace(/\D/g, '') : '';
       const hasPhone = cleanPhone && cleanPhone.length >= 8;
-      const statusBadge = isPre
-        ? `<span class="neighbor-status-badge" style="font-size: 10px; background: #ffedd5; color: #c2410c;">Pré-cadastro</span>`
-        : `<span class="neighbor-status-badge" style="font-size: 10px; background: #dcfce7; color: #15803d;">Confirmado</span>`;
+      const statusBadge = `<span class="neighbor-status-badge" style="font-size: 10px; background: #dcfce7; color: #15803d;">Confirmado</span>`;
       const whatsappBtnHtml = hasPhone ? `
         <a class="btn-whatsapp" style="height: 34px; width: 34px; padding: 0; border-radius: var(--radius-sm); display: inline-flex; align-items: center; justify-content: center;" href="https://wa.me/55${cleanPhone}?text=${encodeURIComponent(`Olá ${n.name}! Sou seu vizinho no Residencial Pacaembu!`)}" target="_blank" title="Chamar no WhatsApp">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.664-.698c.97.589 1.905.92 2.796.92 3.182 0 5.768-2.587 5.769-5.766.001-3.182-2.585-5.77-5.769-5.77zm3.364 8.232c-.14.394-.711.728-1.026.776-.307.047-.704.077-2.115-.494-1.805-.729-2.956-2.553-3.046-2.673-.09-.12-1.02-1.356-1.02-2.586 0-1.23.645-1.838.874-2.088.229-.25.5-.312.667-.312.167 0 .334.002.479.01.152.008.356-.057.556.425.208.501.71 1.733.772 1.859.063.125.104.271.021.438-.083.167-.125.271-.25.417-.125.146-.263.326-.376.438-.125.125-.255.26-.11.51.146.25.648 1.069 1.391 1.731.956.852 1.763 1.116 2.013 1.241.25.125.396.104.542-.063.146-.167.625-.73.792-.98.167-.25.334-.208.563-.125.229.083 1.458.688 1.708.813.25.125.417.188.479.292.063.104.063.604-.077.998zM12 2C6.477 2 2 6.477 2 12c0 1.891.524 3.662 1.435 5.176L2 22l4.957-1.399C8.423 21.493 10.155 22 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/></svg>
@@ -832,8 +1102,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const totalLots = LOTS_DATA.length;
     const allNeighbors = Object.values(state.neighbors);
     const occupiedCount = allNeighbors.length;
-    const confirmedCount = allNeighbors.filter(n => !isPreCadastro(n)).length;
-    const preCount = allNeighbors.filter(n => isPreCadastro(n)).length;
+    const confirmedCount = occupiedCount;
     const percent = ((occupiedCount / totalLots) * 100).toFixed(1);
 
     const countEls = document.querySelectorAll('.stat-occupied-count');
@@ -841,9 +1110,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const confirmedEls = document.querySelectorAll('.stat-confirmed-count');
     confirmedEls.forEach(el => el.innerText = confirmedCount);
-
-    const preEls = document.querySelectorAll('.stat-pre-count');
-    preEls.forEach(el => el.innerText = preCount);
 
     const totalEls = document.querySelectorAll('.stat-total-count');
     totalEls.forEach(el => el.innerText = totalLots);
@@ -1013,22 +1279,33 @@ document.addEventListener('DOMContentLoaded', () => {
   function toggleMapMode() {
     if (!state.imgOverlay) return;
     const btn = document.getElementById('btnToggleMapMode');
+    let nextUrl = 'assets/mapa_clean.webp';
 
     if (state.mapMode === 'clean') {
       state.mapMode = 'fases';
-      state.imgOverlay.setUrl('assets/mapa_fases.webp');
+      nextUrl = 'assets/mapa_fases.webp';
       if (btn) btn.title = 'Mapa de Módulos e Fases ativo. Clique para ver Planta Original';
       showToast('Visualizando: Mapa com Módulos e Fases Separados');
     } else if (state.mapMode === 'fases') {
       state.mapMode = 'original';
-      state.imgOverlay.setUrl('assets/mapa.webp');
+      nextUrl = 'assets/mapa.webp';
       if (btn) btn.title = 'Planta Original ativa. Clique para ver Mapa Minimalista';
       showToast('Visualizando: Planta Original do Livro');
     } else {
       state.mapMode = 'clean';
-      state.imgOverlay.setUrl('assets/mapa_clean.webp');
+      nextUrl = 'assets/mapa_clean.webp';
       if (btn) btn.title = 'Mapa Minimalista ativo. Clique para ver Módulos e Fases';
       showToast('Visualizando: Mapa Minimalista');
+    }
+
+    state.imgOverlay.setUrl(nextUrl);
+    if (state.blurOverlay) {
+      state.blurOverlay.setUrl(nextUrl);
+      if (state.selectedLot) {
+        applyStreetBlur(state.selectedLot.block, state.selectedLot);
+      } else if (state.currentBlock) {
+        applyStreetBlur(state.currentBlock, null);
+      }
     }
   }
 
@@ -1055,21 +1332,25 @@ document.addEventListener('DOMContentLoaded', () => {
     shareMap,
     locateAndShow: (lotId) => {
       closeDirectoryModal();
-      focusLotOnMap(lotId);
       const neighbor = state.neighbors[lotId];
       const lot = LOTS_BY_ID[lotId];
       if (neighbor && lot) {
-        setTimeout(() => showNeighborProfileModal(neighbor, lot), 400);
+        selectOccupiedLot(lot, neighbor);
+      } else {
+        focusLotOnMap(lotId);
       }
     },
     selectSearchItem: (lotId) => {
       closeSearchDropdown();
-      focusLotOnMap(lotId);
       const neighbor = state.neighbors[lotId];
       const lot = LOTS_BY_ID[lotId];
       if (neighbor && lot) {
-        setTimeout(() => showNeighborProfileModal(neighbor, lot), 400);
+        selectOccupiedLot(lot, neighbor);
       } else if (lot) {
+        if (state.currentBlock !== lot.block) {
+          focusBlock(lot.block, null, { skipFitBounds: true });
+        }
+        focusLotOnMap(lotId);
         setTimeout(() => openRegisterModal(lot.block, lot.lot), 400);
       }
     }

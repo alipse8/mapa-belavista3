@@ -663,15 +663,31 @@ html, body {
 /* Leaflet Custom Marker & Popup Overrides */
 .leaflet-top.leaflet-left {
   top: 128px;
-  left: 16px;
+  left: auto !important;
+  right: 16px !important;
   transition: top 0.2s;
 }
 
 @media (max-width: 640px) {
   .leaflet-top.leaflet-left {
-    top: 116px;
-    left: 12px;
+    top: 118px;
+    left: auto !important;
+    right: 10px !important;
   }
+}
+
+/* Camada borrada para destacar apenas o bloco selecionado e suas ruas adjacentes */
+.leaflet-image-layer.map-blur-overlay {
+  filter: blur(7px) brightness(0.78);
+  pointer-events: none;
+  transition: clip-path 0.25s ease;
+}
+
+.block-street-outline {
+  stroke: rgba(2, 132, 199, 0.45);
+  stroke-width: 2;
+  fill: none;
+  pointer-events: none;
 }
 
 .lot-marker {
@@ -749,6 +765,30 @@ html, body {
   0% { box-shadow: 0 2px 6px rgba(249, 115, 22, 0.45), 0 0 0 0px rgba(249, 115, 22, 0.3); }
   70% { box-shadow: 0 2px 6px rgba(249, 115, 22, 0.45), 0 0 0 5px rgba(249, 115, 22, 0); }
   100% { box-shadow: 0 2px 6px rgba(249, 115, 22, 0.45), 0 0 0 0px rgba(249, 115, 22, 0); }
+}
+
+/* Casa selecionada em destaque verde */
+.lot-pin-occupied.selected-house {
+  background: linear-gradient(135deg, #10b981, #059669);
+  border: 2.5px solid white;
+  transform: scale(1.22);
+  position: relative;
+  z-index: 30;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.35), 0 4px 10px rgba(5, 150, 105, 0.6);
+  animation: none;
+}
+
+/* Demais vizinhos destacados em azul quando uma casa esta selecionada */
+.lot-pin-occupied.neighbor-blue {
+  background: linear-gradient(135deg, #0284c7, #0ea5e9);
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.45);
+  animation: pulse-badge-blue 3s infinite;
+}
+
+@keyframes pulse-badge-blue {
+  0% { box-shadow: 0 2px 6px rgba(2, 132, 199, 0.45), 0 0 0 0px rgba(2, 132, 199, 0.35); }
+  70% { box-shadow: 0 2px 6px rgba(2, 132, 199, 0.45), 0 0 0 5px rgba(2, 132, 199, 0); }
+  100% { box-shadow: 0 2px 6px rgba(2, 132, 199, 0.45), 0 0 0 0px rgba(2, 132, 199, 0); }
 }
 
 
@@ -1174,6 +1214,136 @@ textarea.form-control {
   font-style: italic;
 }
 
+/* Modal compacto de perfil do vizinho no canto superior esquerdo */
+#neighborModal.modal-overlay,
+#neighborModal.modal-overlay.active {
+  background: transparent;
+  backdrop-filter: none;
+  pointer-events: none;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 122px 16px 16px 16px;
+}
+
+#neighborModal .modal-card {
+  pointer-events: auto;
+  max-width: 280px;
+  margin: 0;
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.22);
+}
+
+#neighborModal .modal-header {
+  padding: 10px 14px;
+}
+
+#neighborModal .modal-header h3 {
+  font-size: 14px;
+}
+
+#neighborModal .modal-close {
+  width: 28px;
+  height: 28px;
+}
+
+#neighborModal .modal-body {
+  padding: 12px 14px;
+}
+
+#neighborModal .modal-body > div:last-child {
+  margin-top: 10px !important;
+}
+
+#neighborModal .modal-footer {
+  padding: 10px 14px;
+  gap: 6px;
+}
+
+#neighborModal .neighbor-profile-hero {
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+}
+
+#neighborModal .neighbor-avatar-lg {
+  width: 42px;
+  height: 42px;
+  font-size: 18px;
+  margin-bottom: 6px;
+}
+
+#neighborModal #neighborName {
+  font-size: 15px;
+}
+
+#neighborModal .neighbor-location-pill {
+  font-size: 11px;
+  padding: 3px 10px;
+}
+
+#neighborModal .neighbor-message-box {
+  padding: 8px 10px;
+  font-size: 12px;
+  margin-top: 8px;
+  margin-bottom: 10px;
+}
+
+#neighborModal .btn-whatsapp {
+  height: 36px;
+  font-size: 13px;
+  padding: 0 12px;
+}
+
+#neighborModal .modal-footer .btn-primary,
+#neighborModal .modal-footer .btn-danger,
+#neighborModal .modal-footer .btn-secondary {
+  height: 32px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+/* Ao clicar em uma casa ocupada: oculta barra de blocos superior, bandeja inferior e controles extras */
+body.house-focus-mode .block-navigator-bar,
+body.house-focus-mode #blockLotsTray,
+body.house-focus-mode #mapGeneralControl,
+body.house-focus-mode #fabContainer {
+  display: none !important;
+}
+
+body.house-focus-mode #neighborModal.modal-overlay,
+body.house-focus-mode #neighborModal.modal-overlay.active {
+  padding-top: 74px;
+}
+
+body.house-focus-mode .leaflet-top.leaflet-left {
+  top: 74px !important;
+}
+
+/* Rótulos de nome da rua exibidos junto à casa em foco */
+.street-focus-label-wrap {
+  background: transparent;
+  border: none;
+  pointer-events: none !important;
+}
+
+.street-focus-label {
+  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #334155;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  border-radius: 9999px;
+  padding: 2px 10px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
+}
+
 /* Diretório de Vizinhos */
 .directory-list {
   display: flex;
@@ -1375,7 +1545,81 @@ textarea.form-control {
 
   .leaflet-top.leaflet-left {
     top: 118px !important;
-    left: 10px !important;
+    left: auto !important;
+    right: 10px !important;
+  }
+
+  #neighborModal.modal-overlay,
+  #neighborModal.modal-overlay.active {
+    padding: 114px 10px 10px 10px;
+  }
+
+  #neighborModal .modal-card {
+    max-width: 232px;
+  }
+
+  #neighborModal .modal-header {
+    padding: 8px 10px;
+  }
+
+  #neighborModal .modal-header h3 {
+    font-size: 13px;
+  }
+
+  #neighborModal .modal-body {
+    padding: 8px 10px;
+  }
+
+  #neighborModal .neighbor-profile-hero {
+    padding-bottom: 6px;
+    margin-bottom: 6px;
+  }
+
+  #neighborModal .neighbor-avatar-lg {
+    width: 34px;
+    height: 34px;
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+
+  #neighborModal #neighborName {
+    font-size: 14px;
+  }
+
+  #neighborModal .neighbor-location-pill {
+    font-size: 10px;
+    padding: 2px 8px;
+  }
+
+  #neighborModal .neighbor-message-box {
+    padding: 6px 8px;
+    font-size: 11px;
+    margin-top: 6px;
+    margin-bottom: 6px;
+    max-height: 54px;
+    overflow-y: auto;
+  }
+
+  #neighborModal .modal-body > div:last-child {
+    margin-top: 6px !important;
+  }
+
+  #neighborModal .btn-whatsapp {
+    height: 32px;
+    font-size: 12px;
+  }
+
+  #neighborModal .modal-footer {
+    padding: 8px 10px;
+    gap: 4px;
+  }
+
+  #neighborModal .modal-footer .btn-primary,
+  #neighborModal .modal-footer .btn-danger,
+  #neighborModal .modal-footer .btn-secondary {
+    height: 28px;
+    padding: 0 8px;
+    font-size: 11px;
   }
 
 
@@ -1458,5 +1702,20 @@ textarea.form-control {
 
   .fab-main .fab-text {
     display: none;
+  }
+
+  body.house-focus-mode #neighborModal.modal-overlay,
+  body.house-focus-mode #neighborModal.modal-overlay.active {
+    padding: 68px 10px 10px 10px;
+  }
+
+  body.house-focus-mode .leaflet-top.leaflet-left {
+    top: 68px !important;
+  }
+
+  .street-focus-label {
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    padding: 2px 8px;
   }
 }

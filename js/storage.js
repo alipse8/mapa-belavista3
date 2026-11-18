@@ -8,13 +8,19 @@
 
 class LotStorage {
   constructor() {
-    this.storageKey = 'pacaembu_vizinhos_v1';
+    this.storageKey = 'pacaembu_vizinhos_v2';
+    this.localOverridesKey = 'pacaembu_vizinhos_local_dev';
     this.configKey = 'pacaembu_config_v2';
+    this.isLocalEnv = ['localhost', '127.0.0.1', ''].includes(window.location.hostname) || window.location.protocol === 'file:';
     this.subscribers = [];
     this.cache = {};
     this.firebaseApp = null;
     this.firebaseDb = null;
     this.config = this.loadConfig();
+
+    if (this.isLocalEnv) {
+      console.info('[Modo Local] Proteção ativa: leitura do Firebase liberada, mas gravações/exclusões ficam isoladas no navegador.');
+    }
   }
 
   loadConfig() {
@@ -69,19 +75,76 @@ class LotStorage {
     }
   }
 
+  /**
+   * Retorna alterações feitas em ambiente local para mesclar sem tocar no Firebase.
+   */
+  getLocalOverrides() {
+    try {
+      const raw = localStorage.getItem(this.localOverridesKey);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) {
+      console.warn('Erro ao ler overrides locais:', e);
+      return {};
+    }
+  }
+
+  /**
+   * Salva uma alteração ou remoção (null) apenas no armazenamento local de desenvolvimento.
+   */
+  saveLocalOverride(lotId, recordOrNull) {
+    try {
+      const overrides = this.getLocalOverrides();
+      overrides[lotId] = recordOrNull;
+      localStorage.setItem(this.localOverridesKey, JSON.stringify(overrides));
+    } catch (e) {
+      console.error('Erro ao gravar override local:', e);
+    }
+  }
+
+  /**
+   * Aplica alterações locais sobre os dados vindos do banco de produção.
+   */
+  applyLocalOverrides(baseData) {
+    const merged = { ...(baseData || {}), ...this.getLocalOverrides() };
+    Object.keys(merged).forEach((key) => {
+      if (merged[key] === null) delete merged[key];
+    });
+    return merged;
+  }
+
+  /**
+   * Remove registros da antiga lista de pré-cadastro sem telefone confirmado.
+   */
+  filterOutPreCadastros(records) {
+    const cleaned = {};
+    Object.keys(records || {}).forEach((key) => {
+      const n = records[key];
+      if (!n) return;
+      const cleanPhone = (n.phone || '').replace(/\D/g, '');
+      const isPre =
+        n.isPreCadastro === true ||
+        (n.isPreCadastro !== false && cleanPhone.length < 8 && (!n.registeredAt || n.registeredAt === '2026-09-30T18:00:00.000Z'));
+      if (!isPre) {
+        cleaned[key] = n;
+      }
+    });
+    return cleaned;
+  }
+
   loadFromLocal() {
     try {
+      localStorage.removeItem('pacaembu_vizinhos_v1');
       const data = localStorage.getItem(this.storageKey);
       const defaults = (typeof DEFAULT_NEIGHBORS !== 'undefined') ? DEFAULT_NEIGHBORS : {};
-      if (data) {
-        const parsed = JSON.parse(data);
-        this.cache = { ...defaults, ...parsed };
-      } else {
-        this.cache = { ...defaults };
+      let merged = data ? { ...defaults, ...JSON.parse(data) } : { ...defaults };
+      merged = this.filterOutPreCadastros(merged);
+      if (this.isLocalEnv) {
+        merged = this.applyLocalOverrides(merged);
       }
+      this.cache = merged;
     } catch (e) {
       console.error('Erro ao ler LocalStorage:', e);
-      this.cache = (typeof DEFAULT_NEIGHBORS !== 'undefined') ? { ...DEFAULT_NEIGHBORS } : {};
+      this.cache = this.filterOutPreCadastros((typeof DEFAULT_NEIGHBORS !== 'undefined') ? { ...DEFAULT_NEIGHBORS } : {});
     }
   }
 
@@ -120,11 +183,8 @@ class LotStorage {
       // Escuta mudanças em tempo real!
       lotsRef.on('value', (snapshot) => {
         const val = snapshot.val();
-        if (val) {
-          this.cache = val;
-        } else {
-          this.cache = {};
-        }
+        const remoteData = val ? this.filterOutPreCadastros(val) : {};
+        this.cache = this.isLocalEnv ? this.applyLocalOverrides(remoteData) : remoteData;
         this.saveToLocal(); // mantém cópia local
         this.notifySubscribers();
       }, (error) => {
@@ -177,6 +237,13 @@ class LotStorage {
     this.saveToLocal();
     this.notifySubscribers();
 
+    // Em ambiente local, protege o banco de produção gravando apenas no localStorage
+    if (this.isLocalEnv) {
+      this.saveLocalOverride(lotId, record);
+      console.info(`[Modo Local] Lote ${lotId} salvo apenas localmente (${this.localOverridesKey}). Firebase de produção protegido.`);
+      return record;
+    }
+
     // Sincroniza nuvem se ativo
     if (this.config.mode === 'firebase' && this.firebaseDb) {
       try {
@@ -205,6 +272,13 @@ class LotStorage {
     delete this.cache[lotId];
     this.saveToLocal();
     this.notifySubscribers();
+
+    // Em ambiente local, protege o banco de produção removendo apenas no localStorage
+    if (this.isLocalEnv) {
+      this.saveLocalOverride(lotId, null);
+      console.info(`[Modo Local] Lote ${lotId} removido apenas localmente (${this.localOverridesKey}). Firebase de produção protegido.`);
+      return;
+    }
 
     if (this.config.mode === 'firebase' && this.firebaseDb) {
       try {
