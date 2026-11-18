@@ -946,11 +946,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function closeNeighborModal() {
     document.getElementById('neighborModal').classList.remove('active');
     document.body.classList.remove('house-focus-mode');
-    if (state.selectedLot) {
-      state.selectedLot = null;
-      applyStreetBlur(state.currentBlock || null, null);
-      renderAllLots();
-    }
+    focusBlock(null);
   }
 
   // =========================================================================

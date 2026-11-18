@@ -944,12 +944,14 @@ html, body {
   justify-content: center;
   padding: 16px;
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
   transition: opacity 0.25s ease;
 }
 
 .modal-overlay.active {
   opacity: 1;
+  visibility: visible;
   pointer-events: auto;
 }
 
@@ -1226,11 +1228,15 @@ textarea.form-control {
 }
 
 #neighborModal .modal-card {
-  pointer-events: auto;
+  pointer-events: none;
   max-width: 280px;
   margin: 0;
   border-radius: var(--radius-md);
   box-shadow: 0 10px 25px rgba(15, 23, 42, 0.22);
+}
+
+#neighborModal.modal-overlay.active .modal-card {
+  pointer-events: auto;
 }
 
 #neighborModal .modal-header {
