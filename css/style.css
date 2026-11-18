@@ -1235,6 +1235,12 @@ textarea.form-control {
   box-shadow: 0 10px 25px rgba(15, 23, 42, 0.22);
 }
 
+#neighborModal.modal-overlay:not(.active) {
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
 #neighborModal.modal-overlay.active .modal-card {
   pointer-events: auto;
 }

@@ -543,7 +543,10 @@ document.addEventListener('DOMContentLoaded', () => {
       state.selectedLot = null;
       document.body.classList.remove('house-focus-mode');
       const neighborModal = document.getElementById('neighborModal');
-      if (neighborModal) neighborModal.classList.remove('active');
+      if (neighborModal) {
+        neighborModal.classList.remove('active');
+        neighborModal.style.display = 'none';
+      }
     }
 
     state.currentBlock = blockName;
@@ -940,12 +943,18 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
+    modal.style.display = 'flex';
     modal.classList.add('active');
   }
 
   function closeNeighborModal() {
-    document.getElementById('neighborModal').classList.remove('active');
+    const modal = document.getElementById('neighborModal');
+    if (modal) {
+      modal.classList.remove('active');
+      modal.style.display = 'none';
+    }
     document.body.classList.remove('house-focus-mode');
+    state.selectedLot = null;
     focusBlock(null);
   }
 
