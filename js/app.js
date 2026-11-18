@@ -731,10 +731,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const meta = typeof BLOCKS_METADATA !== 'undefined' ? BLOCKS_METADATA[lot.block] : null;
     const isMobile = window.innerWidth <= 768;
     const blockCenterY = meta ? (meta.y1 + meta.y2) / 2 : lot.y;
-    const targetY = isMobile ? Math.max(0, blockCenterY - 110) : blockCenterY;
+    const targetY = isMobile ? Math.max(0, blockCenterY - 22) : blockCenterY;
     const targetX = isMobile ? lot.x : Math.max(0, lot.x - 75);
     const latlng = pixelToLatLng(targetX, targetY);
-    const targetZoom = isMobile ? 0.35 : 0.8;
+    const targetZoom = 0.8;
 
     state.map.setView(latlng, targetZoom, { animate: true, duration: 0.6 });
 
