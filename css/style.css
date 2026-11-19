@@ -1235,10 +1235,12 @@ textarea.form-control {
   box-shadow: 0 10px 25px rgba(15, 23, 42, 0.22);
 }
 
-#neighborModal.modal-overlay:not(.active) {
+#neighborModal.modal-overlay:not(.active),
+#neighborModal.modal-overlay:not(.active) * {
   display: none !important;
   pointer-events: none !important;
   visibility: hidden !important;
+  opacity: 0 !important;
 }
 
 #neighborModal.modal-overlay.active .modal-card {
@@ -1729,5 +1731,13 @@ body.house-focus-mode .leaflet-top.leaflet-left {
     font-size: 11px;
     letter-spacing: 1.5px;
     padding: 2px 8px;
+  }
+
+  #neighborModal.modal-overlay:not(.active),
+  #neighborModal.modal-overlay:not(.active) * {
+    display: none !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
   }
 }

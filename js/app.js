@@ -595,8 +595,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       renderAllLots();
 
-      if (!options.skipFitBounds) {
+      if (!options.skipFitBounds && state.map) {
         // Zoom em todo o loteamento
+        state.map.stop();
+        state.map.invalidateSize();
         state.map.fitBounds([[0, 0], [MAP_DIMENSIONS.height, MAP_DIMENSIONS.width]], {
           padding: [20, 20],
           animate: true,
@@ -739,6 +741,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const latlng = pixelToLatLng(targetX, targetY);
     const targetZoom = 0.8;
 
+    state.map.stop();
     state.map.setView(latlng, targetZoom, { animate: true, duration: 0.6 });
 
     const marker = state.markers[lotId];
@@ -921,13 +924,16 @@ document.addEventListener('DOMContentLoaded', () => {
       );
       whatsappBtn.href = `https://wa.me/55${cleanPhone}?text=${prefilledText}`;
       whatsappBtn.style.display = 'flex';
+      whatsappBtn.style.pointerEvents = 'auto';
     } else {
       whatsappBtn.removeAttribute('href');
       whatsappBtn.style.display = 'none';
+      whatsappBtn.style.pointerEvents = 'none';
     }
 
     // Ação de editar
     if (editBtn) {
+      editBtn.disabled = false;
       editBtn.onclick = () => {
         closeNeighborModal();
         openEditModal(neighbor, lot);
@@ -935,14 +941,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Ação de excluir / desocupar
-    deleteBtn.onclick = async () => {
-      if (confirm(`Deseja realmente remover o cadastro de ${neighbor.name} no Lote ${neighbor.id}?`)) {
-        await window.storage.deleteLot(neighbor.id);
-        showToast('Lote desocupado com sucesso.');
-        closeNeighborModal();
-      }
-    };
+    if (deleteBtn) {
+      deleteBtn.disabled = false;
+      deleteBtn.onclick = async () => {
+        if (confirm(`Deseja realmente remover o cadastro de ${neighbor.name} no Lote ${neighbor.id}?`)) {
+          await window.storage.deleteLot(neighbor.id);
+          showToast('Lote desocupado com sucesso.');
+          closeNeighborModal();
+        }
+      };
+    }
 
+    modal.removeAttribute('aria-hidden');
     modal.style.display = 'flex';
     modal.classList.add('active');
   }
@@ -952,7 +962,26 @@ document.addEventListener('DOMContentLoaded', () => {
     if (modal) {
       modal.classList.remove('active');
       modal.style.display = 'none';
+      modal.setAttribute('aria-hidden', 'true');
     }
+
+    const whatsappBtn = document.getElementById('neighborWhatsappBtn');
+    const editBtn = document.getElementById('btnEditLot');
+    const deleteBtn = document.getElementById('btnDeleteLot');
+    if (whatsappBtn) {
+      whatsappBtn.removeAttribute('href');
+      whatsappBtn.style.display = 'none';
+      whatsappBtn.style.pointerEvents = 'none';
+    }
+    if (editBtn) {
+      editBtn.onclick = null;
+      editBtn.disabled = true;
+    }
+    if (deleteBtn) {
+      deleteBtn.onclick = null;
+      deleteBtn.disabled = true;
+    }
+
     document.body.classList.remove('house-focus-mode');
     state.selectedLot = null;
     focusBlock(null);
